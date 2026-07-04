@@ -57,7 +57,7 @@ SimpleAPI Manager admin key generated: ...
 
 保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。
 
-请求监控页面读取 SimpleAPI 的 `GET /v0/management/call-log`；日志容量由 SimpleAPI `proxy.call_log_max_entries` 控制，`0` 表示关闭调用记录。
+请求监控页面通过 manager-server 同步 SimpleAPI 的 `GET /v0/management/call-log`，并写入本地 SQLite 数据库 `manager.db`。SimpleAPI 侧日志容量由 `proxy.call_log_max_entries` 控制，`0` 表示关闭调用记录；manager-server 侧数据库会保留已同步的历史记录。
 
 ## Docker 镜像
 
@@ -86,6 +86,7 @@ docker run -d \
 - `PANEL_PATH=/app/panel`
 
 `SIMPLEAPI_MANAGER_ADMIN_KEY` 只在新的 `/data` 尚未初始化时生效；已有数据时会继续使用已保存的面板凭据。
+`/data` 同时保存 `manager.json` 和请求监控 SQLite 数据库 `manager.db`，生产部署应挂载 volume。
 
 如果 SimpleAPI 运行在 Docker 宿主机上，面板的 `SimpleAPI 地址` 填 `http://host.docker.internal:8317`。Linux Docker 需要上面示例里的 `--add-host=host.docker.internal:host-gateway`；Docker Desktop 通常已内置这个主机名。
 

@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type {
   CallLogEntry,
+  CallLogResponse,
   ClientApiKey,
   ErrorResponse,
   InternalModel,
@@ -203,13 +204,18 @@ export async function getUsage(session: PanelSession) {
 }
 
 export async function getCallLog(session: PanelSession, limit = 300) {
-  const { data } = await simpleApiClient(session).get<{ items: CallLogEntry[] | null }>(
-    '/call-log',
-    {
-      params: { limit }
-    }
-  );
-  return data.items ?? [];
+  const { data } = await client(session).get<{
+    items: CallLogEntry[] | null;
+    persisted?: boolean;
+    syncError?: string;
+  }>('/api/call-log', {
+    params: { limit }
+  });
+  return {
+    items: data.items ?? [],
+    persisted: data.persisted,
+    syncError: data.syncError
+  } satisfies CallLogResponse;
 }
 
 export function fieldPath(path: string) {

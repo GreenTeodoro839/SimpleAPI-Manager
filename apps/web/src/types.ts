@@ -145,7 +145,14 @@ export interface CallLogEntry {
   http_status: number;
   latency_ms: number;
   failed: boolean;
+  error?: string;
   tokens: CallLogTokens;
+}
+
+export interface CallLogResponse {
+  items: CallLogEntry[];
+  persisted?: boolean;
+  syncError?: string;
 }
 
 export interface ValidationError {

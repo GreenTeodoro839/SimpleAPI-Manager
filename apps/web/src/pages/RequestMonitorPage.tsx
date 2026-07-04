@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FocusEvent, MouseEvent } from 'react';
 import {
   Activity,
   CheckCircle2,
@@ -65,6 +66,13 @@ function isFailed(entry: CallLogEntry) {
   return entry.failed || entry.http_status >= 400 || entry.http_status === 0;
 }
 
+function errorDetail(entry: CallLogEntry) {
+  const error = entry.error?.trim();
+  if (error) return error;
+  if (entry.http_status) return `HTTP ${entry.http_status}`;
+  return '请求失败，暂无错误详情';
+}
+
 function formatDuration(ms?: number) {
   const value = numberValue(ms);
   if (!value) return '--';
@@ -116,7 +124,8 @@ function includesText(entry: CallLogEntry, query: string) {
     entry.model,
     entry.internal_model,
     entry.source_protocol,
-    String(entry.http_status)
+    String(entry.http_status),
+    entry.error
   ]
     .filter(Boolean)
     .join(' ')
@@ -180,6 +189,7 @@ export function RequestMonitorPage() {
   const session = usePanelSession();
   const [entries, setEntries] = useState<CallLogEntry[]>([]);
   const [message, setMessage] = useState('');
+  const [syncWarning, setSyncWarning] = useState('');
   const [loading, setLoading] = useState(false);
   const [range, setRange] = useState<RangeKey>('7d');
   const [viewMode, setViewMode] = useState<ViewMode>('realtime');
@@ -191,14 +201,22 @@ export function RequestMonitorPage() {
   const [limit, setLimit] = useState(300);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshSeconds, setRefreshSeconds] = useState(5);
+  const [errorTooltip, setErrorTooltip] = useState<{
+    x: number;
+    y: number;
+    message: string;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setMessage('');
     try {
-      setEntries(await getCallLog(session, limit));
+      const result = await getCallLog(session, limit);
+      setEntries(result.items);
+      setSyncWarning(result.syncError ?? '');
     } catch (error) {
       setMessage(errorMessage(error));
+      setSyncWarning('');
     } finally {
       setLoading(false);
     }
@@ -294,6 +312,23 @@ export function RequestMonitorPage() {
 
   const aggregateRows = viewMode === 'api_key' ? apiKeyRows : modelRows;
 
+  const showErrorTooltip = (event: MouseEvent<HTMLElement>, entry: CallLogEntry) => {
+    setErrorTooltip({
+      x: Math.min(event.clientX + 12, window.innerWidth - 340),
+      y: Math.min(event.clientY + 12, window.innerHeight - 160),
+      message: errorDetail(entry)
+    });
+  };
+
+  const showFocusedErrorTooltip = (event: FocusEvent<HTMLElement>, entry: CallLogEntry) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setErrorTooltip({
+      x: Math.min(rect.left, window.innerWidth - 340),
+      y: Math.min(rect.bottom + 8, window.innerHeight - 160),
+      message: errorDetail(entry)
+    });
+  };
+
   return (
     <section className="page">
       <div className="page-header">
@@ -308,6 +343,15 @@ export function RequestMonitorPage() {
       </div>
 
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
+      <Notice
+        tone="warning"
+        message={
+          syncWarning
+            ? `同步 SimpleAPI 调用记录失败，正在显示本地数据库记录：${syncWarning}`
+            : ''
+        }
+        onClose={() => setSyncWarning('')}
+      />
 
       <div className="monitor-controls panel">
         <div className="segment-control" role="group" aria-label="时间范围">
@@ -489,9 +533,23 @@ export function RequestMonitorPage() {
                       </td>
                       <td>{protocolLabel(entry.source_protocol)}</td>
                       <td>
-                        <span className={`badge ${failed ? 'danger' : statusTone(entry.http_status)}`}>
-                          {failed ? '失败' : entry.http_status || '成功'}
-                        </span>
+                        {failed ? (
+                          <span
+                            className="badge danger error-badge"
+                            tabIndex={0}
+                            onBlur={() => setErrorTooltip(null)}
+                            onFocus={(event) => showFocusedErrorTooltip(event, entry)}
+                            onMouseEnter={(event) => showErrorTooltip(event, entry)}
+                            onMouseLeave={() => setErrorTooltip(null)}
+                            onMouseMove={(event) => showErrorTooltip(event, entry)}
+                          >
+                            失败
+                          </span>
+                        ) : (
+                          <span className={`badge ${statusTone(entry.http_status)}`}>
+                            {entry.http_status || '成功'}
+                          </span>
+                        )}
                       </td>
                       <td>{formatDuration(entry.latency_ms)}</td>
                       <td>{formatTime(entry.timestamp)}</td>
@@ -564,6 +622,15 @@ export function RequestMonitorPage() {
           已加载 {integer(entries.length)} 条 · 当前显示 {integer(filteredEntries.length)} 条
         </span>
       </div>
+      {errorTooltip && (
+        <div
+          className="error-tooltip"
+          role="tooltip"
+          style={{ left: errorTooltip.x, top: errorTooltip.y }}
+        >
+          {errorTooltip.message}
+        </div>
+      )}
     </section>
   );
 }

@@ -899,6 +899,34 @@ th {
 .badge.danger { background: var(--red-soft); color: var(--red); }
 .badge.neutral { background: var(--surface-soft); color: var(--text-secondary); }
 
+.error-badge {
+  cursor: help;
+  outline: none;
+
+  &:focus {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 24%, transparent);
+  }
+}
+
+.error-tooltip {
+  position: fixed;
+  z-index: 80;
+  width: min(340px, calc(100vw - 24px));
+  max-height: 160px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--red) 26%, var(--border));
+  border-radius: 7px;
+  padding: 10px 11px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
 .monitor-table {
   min-width: 1080px;
 }

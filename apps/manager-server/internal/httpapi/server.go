@@ -11,9 +11,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/callstore"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/config"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/response"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/security"
@@ -23,16 +25,18 @@ import (
 type Server struct {
 	cfg       config.Config
 	store     *store.Store
+	callStore *callstore.Store
 	startedAt int64
 }
 
-func New(cfg config.Config, st *store.Store, startedAt int64) http.Handler {
-	s := &Server{cfg: cfg, store: st, startedAt: startedAt}
+func New(cfg config.Config, st *store.Store, callStore *callstore.Store, startedAt int64) http.Handler {
+	s := &Server{cfg: cfg, store: st, callStore: callStore, startedAt: startedAt}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.health)
 	mux.HandleFunc("/api/info", s.info)
 	mux.HandleFunc("/api/setup", s.setup)
 	mux.HandleFunc("/api/manager-config", s.managerConfig)
+	mux.HandleFunc("/api/call-log", s.callLog)
 	mux.HandleFunc("/simpleapi/", s.proxySimpleAPI)
 	mux.HandleFunc("/", s.panel)
 	return recoverer(logger(mux))
@@ -139,6 +143,31 @@ func (s *Server) managerConfig(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) callLog(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		response.MethodNotAllowed(w)
+		return
+	}
+	if !s.authorize(w, r) {
+		return
+	}
+	limit := parseLimit(r.URL.Query().Get("limit"), 300)
+	syncErr := s.syncSimpleAPICallLog(r.Context(), limit)
+	items, err := s.callStore.Recent(r.Context(), limit)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
+		return
+	}
+	out := map[string]any{
+		"items":     items,
+		"persisted": true,
+	}
+	if syncErr != nil {
+		out["syncError"] = syncErr.Error()
+	}
+	response.JSON(w, http.StatusOK, out)
+}
+
 func (s *Server) proxySimpleAPI(w http.ResponseWriter, r *http.Request) {
 	if !s.authorize(w, r) {
 		return
@@ -186,6 +215,41 @@ func (s *Server) proxySimpleAPI(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
+func (s *Server) syncSimpleAPICallLog(ctx context.Context, limit int) error {
+	conn, ok := s.store.Connection()
+	if !ok {
+		return errors.New("SimpleAPI connection is not configured")
+	}
+	endpoint := conn.BaseURL + store.NormalizeBasePath(conn.BasePath) + "/call-log?limit=" + strconv.Itoa(limit)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Admin-Key", conn.ManagementKey)
+	client := &http.Client{Timeout: 15 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(res.Body, 512))
+		message := strings.TrimSpace(string(body))
+		if message == "" {
+			message = res.Status
+		}
+		return errors.New("SimpleAPI call-log sync failed: " + message)
+	}
+	var payload struct {
+		Items []callstore.Entry `json:"items"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&payload); err != nil {
+		return err
+	}
+	_, err = s.callStore.SaveEntries(ctx, payload.Items)
+	return err
+}
+
 func (s *Server) panel(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		response.MethodNotAllowed(w)
@@ -229,6 +293,19 @@ func requestConnection(req setupRequest) store.SimpleAPIConnection {
 		ManagementKey: strings.TrimSpace(req.ManagementKey),
 		BasePath:      store.NormalizeBasePath(req.BasePath),
 	}
+}
+
+func parseLimit(raw string, fallback int) int {
+	limit := fallback
+	if raw != "" {
+		if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+			limit = value
+		}
+	}
+	if limit > 5000 {
+		return 5000
+	}
+	return limit
 }
 
 func validateSimpleAPI(ctx context.Context, conn store.SimpleAPIConnection) error {

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/callstore"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/config"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/httpapi"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/security"
@@ -34,6 +35,11 @@ func main() {
 	} else {
 		log.Printf("SimpleAPI Manager admin credential initialized")
 	}
+	callDB, err := callstore.Open(*dataDir)
+	if err != nil {
+		log.Fatalf("open call log database: %v", err)
+	}
+	defer callDB.Close()
 
 	cfg := config.Config{
 		HTTPAddr:  *listen,
@@ -42,7 +48,7 @@ func main() {
 	}
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.New(cfg, st, time.Now().UnixMilli()),
+		Handler:           httpapi.New(cfg, st, callDB, time.Now().UnixMilli()),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

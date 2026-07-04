@@ -57,6 +57,8 @@ SimpleAPI Manager admin key generated: ...
 
 保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。
 
+请求监控页面读取 SimpleAPI 的 `GET /v0/management/call-log`；日志容量由 SimpleAPI `proxy.call_log_max_entries` 控制，`0` 表示关闭调用记录。
+
 ## Docker 镜像
 
 每次 push 都会通过 GitHub Actions 构建并推送多架构镜像到 GHCR：

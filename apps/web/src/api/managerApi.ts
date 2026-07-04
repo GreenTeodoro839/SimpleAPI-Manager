@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type {
+  CallLogEntry,
   ClientApiKey,
   ErrorResponse,
   InternalModel,
@@ -198,6 +199,16 @@ export async function listModels(session: PanelSession) {
 
 export async function getUsage(session: PanelSession) {
   const { data } = await simpleApiClient(session).get<{ items: UsageItem[] }>('/usage');
+  return data.items ?? [];
+}
+
+export async function getCallLog(session: PanelSession, limit = 300) {
+  const { data } = await simpleApiClient(session).get<{ items: CallLogEntry[] | null }>(
+    '/call-log',
+    {
+      params: { limit }
+    }
+  );
   return data.items ?? [];
 }
 

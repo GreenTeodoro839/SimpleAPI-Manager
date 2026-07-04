@@ -12,6 +12,7 @@ export interface ProxyConfig {
   rewrite_response_model?: boolean;
   usage_statistics_enabled?: boolean;
   upstream_retry_status_codes?: number[];
+  call_log_max_entries?: number;
 }
 
 export interface ManagementConfig {
@@ -113,6 +114,38 @@ export interface UsageItem {
   failures: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+  total_tokens?: number;
+}
+
+export interface CallLogTokens {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+  total_tokens?: number;
+}
+
+export interface CallLogEntry {
+  request_id: string;
+  timestamp: string;
+  endpoint: string;
+  api_key: string;
+  source_protocol: Protocol | string;
+  alias: string;
+  provider: string;
+  provider_type?: Protocol | string;
+  model: string;
+  internal_model: string;
+  http_status: number;
+  latency_ms: number;
+  failed: boolean;
+  tokens: CallLogTokens;
 }
 
 export interface ValidationError {

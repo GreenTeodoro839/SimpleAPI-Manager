@@ -9,6 +9,7 @@ import { ProvidersPage } from '@/pages/ProvidersPage';
 import { ApiKeysPage } from '@/pages/ApiKeysPage';
 import { PayloadPage } from '@/pages/PayloadPage';
 import { UsagePage } from '@/pages/UsagePage';
+import { RequestMonitorPage } from '@/pages/RequestMonitorPage';
 import { ModelsPage } from '@/pages/ModelsPage';
 import { ConfigPage } from '@/pages/ConfigPage';
 
@@ -67,6 +68,14 @@ export default function App() {
         element={
           <Protected>
             <UsagePage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/monitoring"
+        element={
+          <Protected>
+            <RequestMonitorPage />
           </Protected>
         }
       />

@@ -7,6 +7,16 @@ import { EChartsView } from '@/components/EChartsView';
 import { integer, protocolLabel, statusTone } from '@/utils/format';
 import type { UsageItem } from '@/types';
 
+function usageCacheTokens(item: UsageItem) {
+  return (item.cache_read_tokens ?? 0) + (item.cache_creation_tokens ?? 0) + (item.cached_tokens ?? 0);
+}
+
+function usageTotalTokens(item: UsageItem) {
+  const total = item.total_tokens ?? 0;
+  if (total > 0) return total;
+  return item.input_tokens + item.output_tokens + usageCacheTokens(item) + (item.reasoning_tokens ?? 0);
+}
+
 export function UsagePage() {
   const session = usePanelSession();
   const [items, setItems] = useState<UsageItem[]>([]);
@@ -70,6 +80,9 @@ export function UsagePage() {
                   <th>失败</th>
                   <th>Input</th>
                   <th>Output</th>
+                  <th>Cache</th>
+                  <th>Reasoning</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,6 +96,9 @@ export function UsagePage() {
                     <td>{integer(item.failures)}</td>
                     <td>{integer(item.input_tokens)}</td>
                     <td>{integer(item.output_tokens)}</td>
+                    <td>{integer(usageCacheTokens(item))}</td>
+                    <td>{integer(item.reasoning_tokens ?? 0)}</td>
+                    <td>{integer(usageTotalTokens(item))}</td>
                   </tr>
                 ))}
               </tbody>

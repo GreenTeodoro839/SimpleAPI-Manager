@@ -8,6 +8,19 @@ import { EChartsView } from '@/components/EChartsView';
 import { compactNumber, integer, percent, protocolLabel } from '@/utils/format';
 import type { ClientApiKey, InternalModel, Provider, UsageItem } from '@/types';
 
+function usageTokenTotal(item: UsageItem) {
+  const total = item.total_tokens ?? 0;
+  if (total > 0) return total;
+  return (
+    item.input_tokens +
+    item.output_tokens +
+    (item.cache_read_tokens ?? 0) +
+    (item.cache_creation_tokens ?? 0) +
+    (item.cached_tokens ?? 0) +
+    (item.reasoning_tokens ?? 0)
+  );
+}
+
 export function DashboardPage() {
   const session = usePanelSession();
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -51,7 +64,23 @@ export function DashboardPage() {
     const failures = usage.reduce((sum, item) => sum + item.failures, 0);
     const input = usage.reduce((sum, item) => sum + item.input_tokens, 0);
     const output = usage.reduce((sum, item) => sum + item.output_tokens, 0);
-    return { requests, failures, input, output, successRate: requests ? ((requests - failures) / requests) * 100 : 100 };
+    const cache = usage.reduce(
+      (sum, item) =>
+        sum + (item.cache_read_tokens ?? 0) + (item.cache_creation_tokens ?? 0) + (item.cached_tokens ?? 0),
+      0
+    );
+    const reasoning = usage.reduce((sum, item) => sum + (item.reasoning_tokens ?? 0), 0);
+    const total = usage.reduce((sum, item) => sum + usageTokenTotal(item), 0);
+    return {
+      requests,
+      failures,
+      input,
+      output,
+      cache,
+      reasoning,
+      total,
+      successRate: requests ? ((requests - failures) / requests) * 100 : 100
+    };
   }, [usage]);
 
   const protocolOption = useMemo(() => {
@@ -101,7 +130,7 @@ export function DashboardPage() {
         <StatCard label="内部模型" value={models.length} icon={<Database />} tone="violet" />
         <StatCard label="请求数" value={compactNumber(totals.requests)} icon={<Network />} tone="amber" />
         <StatCard label="成功率" value={percent(totals.successRate)} icon={<AlertTriangle />} tone={totals.failures ? 'red' : 'green'} />
-        <StatCard label="Tokens" value={compactNumber(totals.input + totals.output)} icon={<Database />} sublabel={`in ${integer(totals.input)} / out ${integer(totals.output)}`} />
+        <StatCard label="Tokens" value={compactNumber(totals.total)} icon={<Database />} sublabel={`in ${integer(totals.input)} / out ${integer(totals.output)} / cache ${integer(totals.cache)}`} />
       </div>
       <div className="grid two">
         <div className="panel">

@@ -34,6 +34,7 @@ const navItems = [
   { to: '/api-keys', label: 'API Keys', icon: KeyRound },
   { to: '/payload', label: 'Payload', icon: FileCode2 },
   { to: '/usage', label: '用量', icon: BarChart3 },
+  { to: '/monitoring', label: '请求监控', icon: Activity },
   { to: '/models', label: '模型', icon: Database },
   { to: '/config', label: '配置', icon: Settings2 }
 ];

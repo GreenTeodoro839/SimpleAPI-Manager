@@ -523,6 +523,7 @@ code {
   color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .button,
@@ -631,6 +632,85 @@ code {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+}
+
+.monitor-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 12px;
+
+  > label {
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+
+  .search-field {
+    flex: 2 1 280px;
+    min-width: 220px;
+  }
+
+  .segment-control {
+    flex: 0 1 auto;
+  }
+
+  .checkbox-row {
+    flex: 0 0 auto;
+    min-width: auto;
+  }
+}
+
+.segment-control {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  overflow: hidden;
+
+  button {
+    flex: 0 0 auto;
+    min-height: 32px;
+    border: 0;
+    border-right: 1px solid var(--border);
+    padding: 0 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 800;
+
+    &:last-child {
+      border-right: 0;
+    }
+
+    &.active,
+    &:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+  }
+
+  &.compact button {
+    padding: 0 10px;
+  }
+}
+
+.search-field {
+  position: relative;
+  display: block;
+
+  svg {
+    position: absolute;
+    left: 10px;
+    bottom: 9px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  input {
+    padding-left: 32px;
+  }
 }
 
 label {
@@ -819,6 +899,42 @@ th {
 .badge.danger { background: var(--red-soft); color: var(--red); }
 .badge.neutral { background: var(--surface-soft); color: var(--text-secondary); }
 
+.monitor-table {
+  min-width: 1080px;
+}
+
+.cell-stack,
+.token-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 12px;
+  }
+
+  span {
+    color: var(--text-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.token-stack strong {
+  font-size: 13px;
+}
+
+.monitor-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -916,6 +1032,21 @@ th {
   .content {
     margin-left: 0;
     padding: calc(var(--topbar-height) + 12px) 12px 12px;
+  }
+
+  .monitor-controls {
+    align-items: stretch;
+
+    > label,
+    .search-field,
+    .segment-control {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+
+    .segment-control {
+      overflow-x: auto;
+    }
   }
 
   .page-header,

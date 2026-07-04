@@ -71,6 +71,7 @@ SimpleAPI Manager admin key generated: ...
 docker run -d \
   --name simpleapi-manager \
   -p 18318:18318 \
+  --add-host=host.docker.internal:host-gateway \
   -v simpleapi-manager-data:/data \
   -e SIMPLEAPI_MANAGER_ADMIN_KEY=change-me \
   ghcr.io/greenteodoro839/simpleapi-manager:latest
@@ -83,6 +84,8 @@ docker run -d \
 - `PANEL_PATH=/app/panel`
 
 `SIMPLEAPI_MANAGER_ADMIN_KEY` 只在新的 `/data` 尚未初始化时生效；已有数据时会继续使用已保存的面板凭据。
+
+如果 SimpleAPI 运行在 Docker 宿主机上，面板的 `SimpleAPI 地址` 填 `http://host.docker.internal:8317`。Linux Docker 需要上面示例里的 `--add-host=host.docker.internal:host-gateway`；Docker Desktop 通常已内置这个主机名。
 
 ## 构建验证
 

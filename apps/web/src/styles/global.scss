@@ -212,6 +212,144 @@ code {
   gap: 18px;
 }
 
+.subsection {
+  display: grid;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+}
+
+.subsection-header,
+.condition-title,
+.payload-phase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.repeat-list {
+  display: grid;
+  gap: 10px;
+
+  &.compact {
+    gap: 8px;
+  }
+}
+
+.repeat-row {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+
+  input,
+  select,
+  textarea {
+    min-width: 0;
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+}
+
+.two-plus-action {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+}
+
+.model-auth-row {
+  grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) 120px 36px;
+}
+
+.matcher-main-row {
+  grid-template-columns: minmax(180px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) 36px;
+}
+
+.condition-row {
+  grid-template-columns: minmax(130px, 1fr) minmax(150px, 1.2fr) 32px;
+}
+
+.path-row {
+  grid-template-columns: minmax(0, 1fr) 32px;
+}
+
+.nested-panel,
+.condition-box {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px;
+}
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.condition-title {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: var(--text-primary);
+
+  input {
+    width: auto;
+  }
+}
+
+.payload-phase {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+
+  &:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.payload-phase-header {
+  color: var(--text-primary);
+
+  div {
+    display: grid;
+    gap: 2px;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
 .grid {
   display: grid;
   gap: 18px;
@@ -463,6 +601,10 @@ th {
   gap: 8px;
   min-height: 220px;
   color: var(--text-secondary);
+
+  &.compact {
+    min-height: 92px;
+  }
 }
 
 .error-list {
@@ -557,7 +699,14 @@ th {
 
   .stats-grid,
   .sidebar-grid,
-  .form-grid {
+  .form-grid,
+  .mini-grid,
+  .checkbox-grid,
+  .two-plus-action,
+  .model-auth-row,
+  .matcher-main-row,
+  .condition-row,
+  .path-row {
     grid-template-columns: 1fr;
   }
 }

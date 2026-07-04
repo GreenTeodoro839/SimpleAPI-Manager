@@ -21,6 +21,7 @@ export function SetupPage() {
         const conn = data.config.simpleApiConnection;
         if (conn.baseUrl) setSimpleApiBaseUrl(conn.baseUrl);
         if (conn.basePath) setBasePath(conn.basePath);
+        if (conn.managementKey) setManagementKey(conn.managementKey);
       })
       .catch(() => undefined);
   }, [session]);
@@ -69,7 +70,6 @@ export function SetupPage() {
             <input
               value={managementKey}
               onChange={(event) => setManagementKey(event.target.value)}
-              type="password"
               placeholder="对应 SimpleAPI config.yaml 的 management.admin_key"
             />
           </label>

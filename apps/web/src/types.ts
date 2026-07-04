@@ -148,6 +148,7 @@ export interface SetupRequest {
 export interface PublicSimpleApiConnection {
   baseUrl: string;
   basePath: string;
+  managementKey?: string;
   managementKeySet: boolean;
   updatedAtMs?: number;
 }

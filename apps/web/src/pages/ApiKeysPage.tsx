@@ -17,16 +17,16 @@ import type { ClientApiKey, ClientModel, InternalModel, Protocol } from '@/types
 const protocols: Protocol[] = ['anthropic', 'openai_completion', 'codex'];
 
 const keyTemplate: ClientApiKey = {
-  name: 'new-client',
+  name: '',
   key: '',
-  allowed_protocols: ['anthropic', 'openai_completion', 'codex'],
-  models: [{ model: '', aliasB: '', priority: 0 }]
+  allowed_protocols: [],
+  models: []
 };
 
 function cloneApiKey(item: ClientApiKey = keyTemplate): ClientApiKey {
   return {
     name: item.name,
-    key: '',
+    key: item.key ?? '',
     allowed_protocols: [...(item.allowed_protocols ?? [])],
     models:
       item.models?.map((model) => ({
@@ -115,7 +115,7 @@ export function ApiKeysPage() {
     setSuccess('');
     try {
       const parsed = cleanApiKey(draft);
-      if (!parsed.name || !parsed.key) {
+      if (!parsed.name || (!selected && !parsed.key)) {
         setMessage('API key name 和 key 都必须填写。');
         return;
       }
@@ -176,7 +176,7 @@ export function ApiKeysPage() {
           </button>
         </div>
       </div>
-      <Notice tone="warning" message="API key 会被 SimpleAPI 脱敏返回；编辑已有 key 并保存时，需要重新填写 key。" />
+      <Notice tone="warning" message="编辑已有 API key 时，key 留空会交给 SimpleAPI 按不修改处理。" />
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
       <Notice tone="success" message={success} onClose={() => setSuccess('')} />
       <div className="grid sidebar-grid">
@@ -229,7 +229,7 @@ export function ApiKeysPage() {
                 autoComplete="off"
                 value={draft.key}
                 onChange={(event) => patchDraft({ key: event.target.value })}
-                placeholder="保存时必填"
+                placeholder={selected ? '留空不修改' : '保存时必填'}
               />
             </label>
           </div>

@@ -17,14 +17,12 @@ import type { InternalModel, Protocol, Provider, ProviderModel } from '@/types';
 const protocols: Protocol[] = ['anthropic', 'openai_completion', 'codex'];
 
 const providerTemplate: Provider = {
-  name: 'new-provider',
+  name: '',
   type: 'anthropic',
-  url: 'https://api.anthropic.com',
+  url: '',
   key: '',
-  headers: {
-    'anthropic-version': '2023-06-01'
-  },
-  models: [{ model: 'claude-sonnet-4-20250514', aliasA: 'sonnet4' }]
+  headers: {},
+  models: []
 };
 
 function cloneProvider(provider: Provider = providerTemplate): Provider {
@@ -32,7 +30,7 @@ function cloneProvider(provider: Provider = providerTemplate): Provider {
     name: provider.name,
     type: provider.type,
     url: provider.url,
-    key: '',
+    key: provider.key ?? '',
     headers: { ...(provider.headers ?? {}) },
     models:
       provider.models?.map((model) => ({
@@ -164,7 +162,7 @@ export function ProvidersPage() {
     setSuccess('');
     try {
       const parsed = cleanProvider(draft);
-      if (!parsed.name || !parsed.url || !parsed.key) {
+      if (!parsed.name || !parsed.url || (!selected && !parsed.key)) {
         setMessage('Provider name、url、key 都必须填写。');
         return;
       }
@@ -173,7 +171,7 @@ export function ProvidersPage() {
         return;
       }
       if (Object.values(parsed.headers ?? {}).some((value) => !value)) {
-        setMessage('Header 值不能为空；SimpleAPI 返回的 Header 会被脱敏，保存前需要重填。');
+        setMessage('Header 值不能为空。');
         return;
       }
       if (!parsed.models?.length) {
@@ -223,7 +221,7 @@ export function ProvidersPage() {
           </button>
         </div>
       </div>
-      <Notice tone="warning" message="Provider key 与 headers 会被 SimpleAPI 脱敏返回；编辑已有 Provider 并保存时，需要重新填写这些值。" />
+      <Notice tone="warning" message="编辑已有 Provider 时，key 留空会交给 SimpleAPI 按不修改处理。" />
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
       <Notice tone="success" message={success} onClose={() => setSuccess('')} />
       <div className="grid sidebar-grid">
@@ -293,7 +291,7 @@ export function ProvidersPage() {
                 autoComplete="off"
                 value={draft.key ?? ''}
                 onChange={(event) => patchDraft({ key: event.target.value })}
-                placeholder="保存时必填"
+                placeholder={selected ? '留空不修改' : '保存时必填'}
               />
             </label>
           </div>

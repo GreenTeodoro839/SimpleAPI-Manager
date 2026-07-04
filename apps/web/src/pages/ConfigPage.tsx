@@ -73,7 +73,7 @@ export function ConfigPage() {
       <div className="page-header">
         <div>
           <h1>配置中心</h1>
-          <p>完整 config.yaml 编辑。注意 GET 返回的是脱敏配置，保存前请补齐 key 字段。</p>
+          <p>完整 config.yaml 编辑。直接保存会覆盖当前配置，请确认 key 字段内容正确。</p>
         </div>
         <div className="actions">
           <button className="button button-ghost" onClick={() => void refresh()}>
@@ -94,7 +94,7 @@ export function ConfigPage() {
           </button>
         </div>
       </div>
-      <Notice tone="warning" message="SimpleAPI 为安全会脱敏 providers[].key、api_keys[].key 和 management.admin_key；直接保存完整配置前必须补回这些字段。" />
+      <Notice tone="warning" message="配置中心会直接覆盖完整 config.yaml；保存前请确认 providers[].key、api_keys[].key 和 management.admin_key 内容正确。" />
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
       <Notice tone="success" message={success} onClose={() => setSuccess('')} />
       {errors.length > 0 && (

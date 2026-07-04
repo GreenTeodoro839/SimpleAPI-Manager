@@ -23,6 +23,7 @@ type SimpleAPIConnection struct {
 type PublicConnection struct {
 	BaseURL          string `json:"baseUrl"`
 	BasePath         string `json:"basePath"`
+	ManagementKey    string `json:"managementKey,omitempty"`
 	ManagementKeySet bool   `json:"managementKeySet"`
 	UpdatedAtMS      int64  `json:"updatedAtMs,omitempty"`
 }
@@ -108,6 +109,7 @@ func (s *Store) PublicConnection() (PublicConnection, bool) {
 	return PublicConnection{
 		BaseURL:          conn.BaseURL,
 		BasePath:         NormalizeBasePath(conn.BasePath),
+		ManagementKey:    conn.ManagementKey,
 		ManagementKeySet: conn.ManagementKey != "",
 		UpdatedAtMS:      conn.UpdatedAtMS,
 	}, ok

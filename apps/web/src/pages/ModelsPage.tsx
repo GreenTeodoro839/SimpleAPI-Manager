@@ -29,7 +29,7 @@ export function ModelsPage() {
       <div className="page-header">
         <div>
           <h1>模型索引</h1>
-          <p>以 internal model id 展示，统计和路由都以 aliasA 维度为准。</p>
+          <p>internal model id 使用 provider/aliasA；统计和路由都以 aliasA 维度为准。</p>
         </div>
         <button className="button button-ghost" onClick={refresh} disabled={loading}>
           <RefreshCw size={16} />

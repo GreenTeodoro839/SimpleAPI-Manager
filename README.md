@@ -57,6 +57,33 @@ SimpleAPI Manager admin key generated: ...
 
 保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。
 
+## Docker 镜像
+
+每次 push 都会通过 GitHub Actions 构建并推送多架构镜像到 GHCR：
+
+- 镜像：`ghcr.io/greenteodoro839/simpleapi-manager`
+- 平台：`linux/amd64`、`linux/arm64`
+- Tag：默认分支会推送 `latest` 和分支名；所有 push 都会推送分支或 tag 名，以及 `sha-<commit>`。
+
+运行示例：
+
+```bash
+docker run -d \
+  --name simpleapi-manager \
+  -p 18318:18318 \
+  -v simpleapi-manager-data:/data \
+  -e SIMPLEAPI_MANAGER_ADMIN_KEY=change-me \
+  ghcr.io/greenteodoro839/simpleapi-manager:latest
+```
+
+容器内默认使用：
+
+- `HTTP_ADDR=0.0.0.0:18318`
+- `DATA_DIR=/data`
+- `PANEL_PATH=/app/panel`
+
+`SIMPLEAPI_MANAGER_ADMIN_KEY` 只在新的 `/data` 尚未初始化时生效；已有数据时会继续使用已保存的面板凭据。
+
 ## 构建验证
 
 ```bash

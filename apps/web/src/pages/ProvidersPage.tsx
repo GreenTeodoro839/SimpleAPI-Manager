@@ -78,7 +78,7 @@ function cleanProvider(provider: Provider): Provider {
 function providerModelID(providerName: string, model: ProviderModel) {
   const aliasA = (model.aliasA || model.model).trim();
   const name = providerName.trim();
-  return name && aliasA ? `${name}_${aliasA}` : '';
+  return name && aliasA ? `${name}/${aliasA}` : '';
 }
 
 export function ProvidersPage() {
@@ -168,8 +168,8 @@ export function ProvidersPage() {
         setMessage('Provider name、url、key 都必须填写。');
         return;
       }
-      if (parsed.name.includes('_')) {
-        setMessage('Provider name 不能包含下划线。');
+      if (parsed.name.includes('/')) {
+        setMessage('Provider name 不能包含斜杠 /。');
         return;
       }
       if (Object.values(parsed.headers ?? {}).some((value) => !value)) {

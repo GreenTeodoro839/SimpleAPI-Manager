@@ -267,7 +267,7 @@ export function ApiKeysPage() {
                       value={model.model}
                       onChange={(event) => updateModel(index, { model: event.target.value })}
                     >
-                      <option value="">选择 provider_aliasA</option>
+                      <option value="">选择 provider/aliasA</option>
                       {models.map((item) => (
                         <option key={item.id} value={item.id}>
                           {modelLabel(item)}

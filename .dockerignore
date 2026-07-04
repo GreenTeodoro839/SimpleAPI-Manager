@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+apps/web/dist
+bin
+run-data
+*.log
+panel-*.png
+.DS_Store

@@ -1,0 +1,37 @@
+{
+  "name": "simpleapi-manager-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@uiw/react-codemirror": "^4.25.3",
+    "axios": "^1.13.2",
+    "echarts": "^6.1.0",
+    "i18next": "^26.2.0",
+    "lucide-react": "^0.475.0",
+    "motion": "^12.34.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^17.0.8",
+    "react-router-dom": "^7.1.5",
+    "yaml": "^2.8.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "sass": "^1.83.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "vite-plugin-singlefile": "^2.1.0"
+  }
+}

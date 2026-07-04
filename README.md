@@ -1,0 +1,66 @@
+# SimpleAPI Manager
+
+SimpleAPI Manager 是一个独立面板项目，不嵌入 SimpleAPI。连接方式参考 CPA-Manager-Plus：
+
+- 浏览器只连接本项目的 `manager-server`。
+- `manager-server` 保存 SimpleAPI 地址和 SimpleAPI `management.admin_key`。
+- 前端请求 SimpleAPI 管理接口时走 `manager-server` 反向代理，浏览器不会持有 SimpleAPI 管理密钥。
+
+## 技术栈
+
+- Web：Vite、React、TypeScript、SCSS、axios、echarts、zustand、react-router-dom、CodeMirror。
+- Manager Server：Go 标准库 HTTP 服务，JSON 文件存储面板配置。
+
+## 开发
+
+```bash
+npm install
+npm run dev
+```
+
+另开一个终端启动后端：
+
+```bash
+npm run manager-server:build
+./bin/simpleapi-manager -listen 127.0.0.1:18318
+```
+
+Vite dev server 默认代理 `/api`、`/simpleapi`、`/health` 到 `http://127.0.0.1:18318`。
+
+## 生产构建
+
+```bash
+npm run build
+npm run manager-server:build
+./bin/simpleapi-manager -listen 0.0.0.0:18318 -panel apps/web/dist
+```
+
+首次启动时，`manager-server` 会在日志里输出面板 Admin Key：
+
+```text
+SimpleAPI Manager admin key generated: ...
+```
+
+开发时也可以显式指定首次初始化用的面板 key：
+
+```bash
+./bin/simpleapi-manager -listen 127.0.0.1:18318 -panel apps/web/dist -admin-key test-admin-key
+```
+
+`-admin-key` 只在新的 data 目录尚未初始化时生效；已有 `data/manager.json` 时会继续使用已保存的面板凭据。
+
+用这个 key 登录面板，然后在 Setup 页面填写：
+
+- SimpleAPI 地址，例如 `http://127.0.0.1:8317`
+- SimpleAPI 管理接口 Base Path，默认 `/-/api`
+- SimpleAPI Admin Key，即 SimpleAPI `config.yaml` 里的 `management.admin_key`
+
+保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。
+
+## 构建验证
+
+```bash
+npm run build
+npm run manager-server:test
+npm run manager-server:build
+```

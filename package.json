@@ -1,0 +1,17 @@
+{
+  "name": "simpleapi-manager",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "preview": "npm --workspace apps/web run preview",
+    "type-check": "npm --workspace apps/web run type-check",
+    "manager-server:build": "cd apps/manager-server && go build -o ../../bin/simpleapi-manager ./cmd/simpleapi-manager",
+    "manager-server:test": "cd apps/manager-server && go test ./..."
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+apps/web/dist/
+bin/
+run-data/
+*.log
+panel-*.png

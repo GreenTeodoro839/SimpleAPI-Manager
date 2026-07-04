@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, LockKeyhole, Moon, Sun } from 'lucide-react';
+import { Activity, LockKeyhole, Monitor, Moon, Sun } from 'lucide-react';
 import { errorMessage, getInfo, getManagerConfig } from '@/api/managerApi';
 import { useSessionStore } from '@/store/session';
 import { useThemeStore } from '@/store/theme';
@@ -10,8 +10,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useSessionStore((state) => state.setSession);
   const storedPanelBase = useSessionStore((state) => state.panelBase);
-  const themeMode = useThemeStore((state) => state.mode);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const themePreference = useThemeStore((state) => state.preference);
+  const cycleTheme = useThemeStore((state) => state.cycleTheme);
   const [panelBase, setPanelBase] = useState(storedPanelBase);
   const [adminKey, setAdminKey] = useState('');
   const [message, setMessage] = useState('');
@@ -39,6 +39,10 @@ export function LoginPage() {
       setLoading(false);
     }
   };
+  const themeLabel =
+    themePreference === 'auto' ? '自动' : themePreference === 'dark' ? '深色' : '浅色';
+  const nextThemeLabel =
+    themePreference === 'auto' ? '浅色' : themePreference === 'light' ? '深色' : '自动';
 
   return (
     <div className="login-screen">
@@ -46,11 +50,17 @@ export function LoginPage() {
         <button
           className="icon-button login-theme-button"
           type="button"
-          onClick={toggleTheme}
-          aria-label={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
-          title={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
+          onClick={cycleTheme}
+          aria-label={`当前主题：${themeLabel}，点击切换到${nextThemeLabel}`}
+          title={`当前主题：${themeLabel}，点击切换到${nextThemeLabel}`}
         >
-          {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          {themePreference === 'auto' ? (
+            <Monitor size={16} />
+          ) : themePreference === 'dark' ? (
+            <Moon size={16} />
+          ) : (
+            <Sun size={16} />
+          )}
         </button>
         <div className="brand large">
           <div className="brand-mark">

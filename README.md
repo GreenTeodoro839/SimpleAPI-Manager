@@ -52,7 +52,7 @@ SimpleAPI Manager admin key generated: ...
 用这个 key 登录面板，然后在 Setup 页面填写：
 
 - SimpleAPI 地址，例如 `http://127.0.0.1:8317`
-- SimpleAPI 管理接口 Base Path，默认 `/-/api`
+- SimpleAPI 管理接口 Base Path，默认 `/v0/management`
 - SimpleAPI Admin Key，即 SimpleAPI `config.yaml` 里的 `management.admin_key`
 
 保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。

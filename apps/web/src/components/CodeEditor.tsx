@@ -10,7 +10,7 @@ interface CodeEditorProps {
 }
 
 export function CodeEditor({ value, onChange, minHeight = '420px', readOnly }: CodeEditorProps) {
-  const themeMode = useThemeStore((state) => state.mode);
+  const themeMode = useThemeStore((state) => state.effective);
 
   return (
     <div className="code-editor" style={{ minHeight }}>

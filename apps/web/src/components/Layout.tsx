@@ -10,6 +10,7 @@ import {
   KeyRound,
   LogOut,
   Menu,
+  Monitor,
   Moon,
   RefreshCw,
   ServerCog,
@@ -41,12 +42,16 @@ export function Layout({ children, onRefresh, refreshing }: LayoutProps) {
   const [open, setOpen] = useState(false);
   const disconnect = useSessionStore((state) => state.disconnect);
   const panelBase = useSessionStore((state) => state.panelBase);
-  const themeMode = useThemeStore((state) => state.mode);
-  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const themePreference = useThemeStore((state) => state.preference);
+  const cycleTheme = useThemeStore((state) => state.cycleTheme);
   const location = useLocation();
   const active = navItems.find((item) =>
     item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
   );
+  const themeLabel =
+    themePreference === 'auto' ? '自动' : themePreference === 'dark' ? '深色' : '浅色';
+  const nextThemeLabel =
+    themePreference === 'auto' ? '浅色' : themePreference === 'light' ? '深色' : '自动';
 
   return (
     <div className="app-shell">
@@ -70,11 +75,17 @@ export function Layout({ children, onRefresh, refreshing }: LayoutProps) {
           <button
             className="button button-ghost"
             type="button"
-            onClick={toggleTheme}
-            title={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
+            onClick={cycleTheme}
+            title={`当前主题：${themeLabel}，点击切换到${nextThemeLabel}`}
           >
-            {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {themeMode === 'dark' ? '浅色' : '深色'}
+            {themePreference === 'auto' ? (
+              <Monitor size={16} />
+            ) : themePreference === 'dark' ? (
+              <Moon size={16} />
+            ) : (
+              <Sun size={16} />
+            )}
+            {themeLabel}
           </button>
           <button
             className="button button-ghost"

@@ -121,7 +121,7 @@ export function ApiKeysPage() {
     setSuccess('');
     try {
       const parsed = cleanApiKey(draft);
-      if (!parsed.name || (!selected && !parsed.key)) {
+      if (!parsed.name || !parsed.key) {
         setMessage('API key name 和 key 都必须填写。');
         return;
       }
@@ -182,7 +182,7 @@ export function ApiKeysPage() {
           </button>
         </div>
       </div>
-      <Notice tone="warning" message="编辑已有 API key 时，key 留空会交给 SimpleAPI 按不修改处理。" />
+      <Notice tone="warning" message="API key 会按 SimpleAPI API 返回值明文显示，保存时会随配置一起提交。" />
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
       <Notice tone="success" message={success} onClose={() => setSuccess('')} />
       <div className="grid sidebar-grid">
@@ -236,7 +236,7 @@ export function ApiKeysPage() {
                   autoComplete="off"
                   value={draft.key}
                   onChange={(event) => patchDraft({ key: event.target.value })}
-                  placeholder={selected ? '留空不修改' : '保存时必填'}
+                  placeholder="保存时必填"
                 />
                 <button
                   className="button button-ghost"

@@ -162,7 +162,7 @@ export function ProvidersPage() {
     setSuccess('');
     try {
       const parsed = cleanProvider(draft);
-      if (!parsed.name || !parsed.url || (!selected && !parsed.key)) {
+      if (!parsed.name || !parsed.url || !parsed.key) {
         setMessage('Provider name、url、key 都必须填写。');
         return;
       }
@@ -221,7 +221,7 @@ export function ProvidersPage() {
           </button>
         </div>
       </div>
-      <Notice tone="warning" message="编辑已有 Provider 时，key 留空会交给 SimpleAPI 按不修改处理。" />
+      <Notice tone="warning" message="Provider key 会按 SimpleAPI API 返回值明文显示，保存时会随配置一起提交。" />
       <Notice tone="danger" message={message} onClose={() => setMessage('')} />
       <Notice tone="success" message={success} onClose={() => setSuccess('')} />
       <div className="grid sidebar-grid">
@@ -291,7 +291,7 @@ export function ProvidersPage() {
                 autoComplete="off"
                 value={draft.key ?? ''}
                 onChange={(event) => patchDraft({ key: event.target.value })}
-                placeholder={selected ? '留空不修改' : '保存时必填'}
+                placeholder="保存时必填"
               />
             </label>
           </div>

@@ -9,7 +9,7 @@ export function SetupPage() {
   const session = usePanelSession();
   const navigate = useNavigate();
   const [simpleApiBaseUrl, setSimpleApiBaseUrl] = useState('http://127.0.0.1:8317');
-  const [basePath, setBasePath] = useState('/-/api');
+  const [basePath, setBasePath] = useState('/v0/management');
   const [managementKey, setManagementKey] = useState('');
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState('');

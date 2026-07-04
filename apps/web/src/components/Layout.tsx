@@ -10,13 +10,16 @@ import {
   KeyRound,
   LogOut,
   Menu,
+  Moon,
   RefreshCw,
   ServerCog,
   Settings2,
+  Sun,
   X
 } from 'lucide-react';
 import { useState } from 'react';
 import { useSessionStore } from '@/store/session';
+import { useThemeStore } from '@/store/theme';
 
 interface LayoutProps {
   children: ReactNode;
@@ -38,6 +41,8 @@ export function Layout({ children, onRefresh, refreshing }: LayoutProps) {
   const [open, setOpen] = useState(false);
   const disconnect = useSessionStore((state) => state.disconnect);
   const panelBase = useSessionStore((state) => state.panelBase);
+  const themeMode = useThemeStore((state) => state.mode);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const location = useLocation();
   const active = navItems.find((item) =>
     item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
@@ -62,6 +67,15 @@ export function Layout({ children, onRefresh, refreshing }: LayoutProps) {
         </div>
         <div className="topbar-right">
           <span className="connection-pill">{panelBase || 'same-origin manager'}</span>
+          <button
+            className="button button-ghost"
+            type="button"
+            onClick={toggleTheme}
+            title={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
+          >
+            {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {themeMode === 'dark' ? '浅色' : '深色'}
+          </button>
           <button
             className="button button-ghost"
             type="button"

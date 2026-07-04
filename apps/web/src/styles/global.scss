@@ -121,9 +121,10 @@ code {
   width: var(--sidebar-width);
   border-right: 1px solid var(--border);
   background: var(--sidebar-bg);
-  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
+  box-shadow: 2px 0 18px color-mix(in srgb, var(--primary) 10%, transparent);
   padding: 0 10px 14px;
   overflow-y: auto;
+  backdrop-filter: blur(16px);
 }
 
 .brand {
@@ -224,7 +225,7 @@ code {
   padding: calc(var(--topbar-height) + var(--content-gap)) var(--content-gap) var(--content-gap);
   background:
     radial-gradient(circle at 34% 0, var(--content-glow) 0, transparent 280px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0, transparent 160px),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 24%, transparent) 0, transparent 160px),
     var(--app-bg);
 }
 
@@ -604,8 +605,15 @@ code {
 }
 
 .login-panel {
+  position: relative;
   width: min(430px, 100%);
   padding: 22px;
+}
+
+.login-theme-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .form-grid {
@@ -725,6 +733,39 @@ label {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 7px;
+  background: var(--editor-bg);
+
+  .cm-editor {
+    background: var(--editor-bg);
+    color: var(--text-primary);
+  }
+
+  .cm-scroller {
+    background: var(--editor-bg);
+  }
+
+  .cm-gutters {
+    border-color: var(--border);
+    background: var(--editor-gutter-bg);
+    color: var(--text-muted);
+  }
+
+  .cm-activeLine,
+  .cm-activeLineGutter {
+    background: var(--editor-active-line);
+  }
+
+  .cm-selectionBackground {
+    background: var(--editor-selection);
+  }
+
+  .cm-focused {
+    outline: 0;
+  }
+
+  .cm-cursor {
+    border-left-color: var(--text-primary);
+  }
 }
 
 .chart-surface {

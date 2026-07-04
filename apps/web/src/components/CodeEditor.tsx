@@ -1,5 +1,6 @@
 import CodeMirror from '@uiw/react-codemirror';
 import { yaml as yamlLanguage } from '@codemirror/lang-yaml';
+import { useThemeStore } from '@/store/theme';
 
 interface CodeEditorProps {
   value: string;
@@ -9,11 +10,14 @@ interface CodeEditorProps {
 }
 
 export function CodeEditor({ value, onChange, minHeight = '420px', readOnly }: CodeEditorProps) {
+  const themeMode = useThemeStore((state) => state.mode);
+
   return (
     <div className="code-editor" style={{ minHeight }}>
       <CodeMirror
         value={value}
         minHeight={minHeight}
+        theme={themeMode}
         basicSetup={{
           foldGutter: true,
           lineNumbers: true,

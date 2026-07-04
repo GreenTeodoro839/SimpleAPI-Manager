@@ -1,14 +1,17 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, LockKeyhole } from 'lucide-react';
+import { Activity, LockKeyhole, Moon, Sun } from 'lucide-react';
 import { errorMessage, getInfo, getManagerConfig } from '@/api/managerApi';
 import { useSessionStore } from '@/store/session';
+import { useThemeStore } from '@/store/theme';
 import { Notice } from '@/components/Notice';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useSessionStore((state) => state.setSession);
   const storedPanelBase = useSessionStore((state) => state.panelBase);
+  const themeMode = useThemeStore((state) => state.mode);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const [panelBase, setPanelBase] = useState(storedPanelBase);
   const [adminKey, setAdminKey] = useState('');
   const [message, setMessage] = useState('');
@@ -40,6 +43,15 @@ export function LoginPage() {
   return (
     <div className="login-screen">
       <form className="login-panel" onSubmit={submit}>
+        <button
+          className="icon-button login-theme-button"
+          type="button"
+          onClick={toggleTheme}
+          aria-label={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
+          title={themeMode === 'dark' ? '切换浅色主题' : '切换深色主题'}
+        >
+          {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
         <div className="brand large">
           <div className="brand-mark">
             <Activity size={26} />

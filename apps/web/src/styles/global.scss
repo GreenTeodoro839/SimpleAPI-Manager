@@ -610,6 +610,13 @@ code {
   grid-template-columns: 1fr;
 }
 
+.input-with-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -871,6 +878,7 @@ th {
   .stats-grid,
   .sidebar-grid,
   .form-grid,
+  .input-with-action,
   .mini-grid,
   .checkbox-grid,
   .two-plus-action,

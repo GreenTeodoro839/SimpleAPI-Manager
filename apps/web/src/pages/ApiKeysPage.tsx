@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
+import { KeyRound, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import {
   createApiKey,
   deleteApiKey,
@@ -54,6 +54,12 @@ function cleanApiKey(item: ClientApiKey): ClientApiKey {
 
 function modelLabel(model: InternalModel) {
   return `${model.id} · ${model.upstream_model}`;
+}
+
+function generateClientKey() {
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  return `sk-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
 export function ApiKeysPage() {
@@ -225,12 +231,22 @@ export function ApiKeysPage() {
             </label>
             <label>
               Key
-              <input
-                autoComplete="off"
-                value={draft.key}
-                onChange={(event) => patchDraft({ key: event.target.value })}
-                placeholder={selected ? '留空不修改' : '保存时必填'}
-              />
+              <div className="input-with-action">
+                <input
+                  autoComplete="off"
+                  value={draft.key}
+                  onChange={(event) => patchDraft({ key: event.target.value })}
+                  placeholder={selected ? '留空不修改' : '保存时必填'}
+                />
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  onClick={() => patchDraft({ key: generateClientKey() })}
+                >
+                  <KeyRound size={16} />
+                  生成
+                </button>
+              </div>
             </label>
           </div>
 

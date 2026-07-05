@@ -42,6 +42,27 @@ type Entry struct {
 	Tokens         Tokens    `json:"tokens"`
 }
 
+type UsageItem struct {
+	Provider           string `json:"provider"`
+	ProviderType       string `json:"provider_type"`
+	AliasA             string `json:"aliasA"`
+	UpstreamModel      string `json:"upstream_model"`
+	InternalModel      string `json:"internal_model"`
+	SourceProtocol     string `json:"source_protocol"`
+	TargetProviderType string `json:"target_provider_type"`
+	HTTPStatus         int    `json:"http_status"`
+
+	Requests            int64 `json:"requests"`
+	Failures            int64 `json:"failures"`
+	InputTokens         int64 `json:"input_tokens"`
+	OutputTokens        int64 `json:"output_tokens"`
+	CacheReadTokens     int64 `json:"cache_read_tokens"`
+	CacheCreationTokens int64 `json:"cache_creation_tokens"`
+	CachedTokens        int64 `json:"cached_tokens"`
+	ReasoningTokens     int64 `json:"reasoning_tokens"`
+	TotalTokens         int64 `json:"total_tokens"`
+}
+
 type Store struct {
 	db *sql.DB
 }
@@ -241,12 +262,67 @@ func (s *Store) Recent(ctx context.Context, limit int) ([]Entry, error) {
 	return entries, rows.Err()
 }
 
+func (s *Store) Usage(ctx context.Context) ([]UsageItem, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT
+		provider, provider_type, model, internal_model, source_protocol, http_status,
+		COUNT(*),
+		SUM(CASE WHEN failed != 0 THEN 1 ELSE 0 END),
+		COALESCE(SUM(input_tokens), 0),
+		COALESCE(SUM(output_tokens), 0),
+		COALESCE(SUM(cache_read_tokens), 0),
+		COALESCE(SUM(cache_creation_tokens), 0),
+		COALESCE(SUM(cached_tokens), 0),
+		COALESCE(SUM(reasoning_tokens), 0),
+		COALESCE(SUM(total_tokens), 0)
+		FROM call_logs
+		GROUP BY provider, provider_type, model, internal_model, source_protocol, http_status
+		ORDER BY internal_model ASC, source_protocol ASC, http_status ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]UsageItem, 0)
+	for rows.Next() {
+		var item UsageItem
+		if err := rows.Scan(
+			&item.Provider,
+			&item.ProviderType,
+			&item.UpstreamModel,
+			&item.InternalModel,
+			&item.SourceProtocol,
+			&item.HTTPStatus,
+			&item.Requests,
+			&item.Failures,
+			&item.InputTokens,
+			&item.OutputTokens,
+			&item.CacheReadTokens,
+			&item.CacheCreationTokens,
+			&item.CachedTokens,
+			&item.ReasoningTokens,
+			&item.TotalTokens,
+		); err != nil {
+			return nil, err
+		}
+		item.AliasA = aliasAFromInternalModel(item.InternalModel)
+		item.TargetProviderType = item.ProviderType
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
 func normalizeEntry(entry Entry) Entry {
 	if entry.Timestamp.IsZero() {
 		entry.Timestamp = time.Now()
 	}
 	entry.Error = strings.TrimSpace(entry.Error)
 	return entry
+}
+
+func aliasAFromInternalModel(value string) string {
+	if i := strings.Index(value, "/"); i >= 0 && i < len(value)-1 {
+		return value[i+1:]
+	}
+	return value
 }
 
 func dedupeKey(entry Entry) string {

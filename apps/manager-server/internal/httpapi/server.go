@@ -37,6 +37,7 @@ func New(cfg config.Config, st *store.Store, callStore *callstore.Store, started
 	mux.HandleFunc("/api/setup", s.setup)
 	mux.HandleFunc("/api/manager-config", s.managerConfig)
 	mux.HandleFunc("/api/call-log", s.callLog)
+	mux.HandleFunc("/api/usage", s.usage)
 	mux.HandleFunc("/simpleapi/", s.proxySimpleAPI)
 	mux.HandleFunc("/", s.panel)
 	return recoverer(logger(mux))
@@ -154,6 +155,31 @@ func (s *Server) callLog(w http.ResponseWriter, r *http.Request) {
 	limit := parseLimit(r.URL.Query().Get("limit"), 300)
 	syncErr := s.syncSimpleAPICallLog(r.Context(), limit)
 	items, err := s.callStore.Recent(r.Context(), limit)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
+		return
+	}
+	out := map[string]any{
+		"items":     items,
+		"persisted": true,
+	}
+	if syncErr != nil {
+		out["syncError"] = syncErr.Error()
+	}
+	response.JSON(w, http.StatusOK, out)
+}
+
+func (s *Server) usage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		response.MethodNotAllowed(w)
+		return
+	}
+	if !s.authorize(w, r) {
+		return
+	}
+	syncLimit := parseLimit(r.URL.Query().Get("syncLimit"), 5000)
+	syncErr := s.syncSimpleAPICallLog(r.Context(), syncLimit)
+	items, err := s.callStore.Usage(r.Context())
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
 		return

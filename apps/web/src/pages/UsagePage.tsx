@@ -53,7 +53,7 @@ export function UsagePage() {
       <div className="page-header">
         <div>
           <h1>用量统计</h1>
-          <p>来自 SimpleAPI 内存统计，重启后会清空。</p>
+          <p>来自 manager-server 本地数据库，基于已同步的调用记录聚合。</p>
         </div>
         <button className="button button-ghost" onClick={() => void refresh()} disabled={loading}>
           <RefreshCw size={16} />

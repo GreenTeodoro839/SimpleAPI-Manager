@@ -199,7 +199,7 @@ export async function listModels(session: PanelSession) {
 }
 
 export async function getUsage(session: PanelSession) {
-  const { data } = await simpleApiClient(session).get<{ items: UsageItem[] }>('/usage');
+  const { data } = await client(session).get<{ items: UsageItem[] }>('/api/usage');
   return data.items ?? [];
 }
 

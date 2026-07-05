@@ -57,7 +57,7 @@ SimpleAPI Manager admin key generated: ...
 
 保存成功后，面板通过 `/simpleapi/api/*` 代理访问 SimpleAPI 管理 API。
 
-请求监控页面通过 manager-server 同步 SimpleAPI 的 `GET /v0/management/call-log`，并写入本地 SQLite 数据库 `manager.db`。SimpleAPI 侧日志容量由 `proxy.call_log_max_entries` 控制，`0` 表示关闭调用记录；manager-server 侧数据库会保留已同步的历史记录。
+请求监控页面通过 manager-server 同步 SimpleAPI 的 `GET /v0/management/call-log`，并写入本地 SQLite 数据库 `manager.db`。仪表盘和用量统计也从 `manager.db` 聚合，不再读取 SimpleAPI 的内存 `/usage`。SimpleAPI 侧日志容量由 `proxy.call_log_max_entries` 控制，`0` 表示关闭调用记录；manager-server 侧数据库会保留已同步的历史记录。
 
 ## Docker 镜像
 

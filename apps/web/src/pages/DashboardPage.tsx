@@ -5,6 +5,7 @@ import { usePanelSession } from '@/store/session';
 import { StatCard } from '@/components/StatCard';
 import { Notice } from '@/components/Notice';
 import { EChartsView } from '@/components/EChartsView';
+import { useThemeStore } from '@/store/theme';
 import { compactNumber, percent, protocolLabel, tokenNumber } from '@/utils/format';
 import type { ClientApiKey, InternalModel, Provider, UsageItem } from '@/types';
 
@@ -23,6 +24,7 @@ function usageTokenTotal(item: UsageItem) {
 
 export function DashboardPage() {
   const session = usePanelSession();
+  const theme = useThemeStore((state) => state.effective);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [apiKeys, setApiKeys] = useState<ClientApiKey[]>([]);
   const [models, setModels] = useState<InternalModel[]>([]);
@@ -86,17 +88,36 @@ export function DashboardPage() {
   const protocolOption = useMemo(() => {
     const grouped = new Map<string, number>();
     usage.forEach((item) => grouped.set(item.source_protocol, (grouped.get(item.source_protocol) ?? 0) + item.requests));
+    const textColor = theme === 'dark' ? '#a8b0c0' : '#5f6c7b';
+    const mutedColor = theme === 'dark' ? '#737b8c' : '#8a96a6';
+    const tooltipBackground = theme === 'dark' ? '#121620' : '#ffffff';
+    const tooltipBorder = theme === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)';
     return {
-      tooltip: { trigger: 'item' },
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: tooltipBackground,
+        borderColor: tooltipBorder,
+        textStyle: { color: textColor }
+      },
+      textStyle: { color: textColor, textBorderWidth: 0 },
       series: [
         {
           type: 'pie',
           radius: ['45%', '72%'],
+          label: {
+            color: textColor,
+            fontWeight: 700,
+            textBorderWidth: 0,
+            textShadowBlur: 0
+          },
+          labelLine: {
+            lineStyle: { color: mutedColor }
+          },
           data: Array.from(grouped.entries()).map(([name, value]) => ({ name: protocolLabel(name), value }))
         }
       ]
     };
-  }, [usage]);
+  }, [theme, usage]);
 
   const providerOption = useMemo(() => {
     const grouped = new Map<string, number>();

@@ -3,18 +3,18 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   Activity,
   BarChart3,
-  Bot,
+  Braces,
   Database,
-  FileCode2,
-  Gauge,
-  KeyRound,
+  Key,
+  LayoutDashboard,
   LogOut,
   Menu,
   Monitor,
   Moon,
+  Network,
   RefreshCw,
   ServerCog,
-  Settings2,
+  SlidersHorizontal,
   Sun,
   X
 } from 'lucide-react';
@@ -29,14 +29,14 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: '/', label: '仪表盘', icon: Gauge },
-  { to: '/providers', label: '提供商', icon: Bot },
-  { to: '/api-keys', label: 'API Keys', icon: KeyRound },
-  { to: '/payload', label: 'Payload', icon: FileCode2 },
+  { to: '/', label: '仪表盘', icon: LayoutDashboard },
+  { to: '/providers', label: '提供商', icon: Network },
+  { to: '/api-keys', label: 'API Keys', icon: Key },
+  { to: '/payload', label: 'Payload', icon: Braces },
   { to: '/usage', label: '用量', icon: BarChart3 },
   { to: '/monitoring', label: '请求监控', icon: Activity },
   { to: '/models', label: '模型', icon: Database },
-  { to: '/config', label: '配置', icon: Settings2 }
+  { to: '/config', label: '配置', icon: SlidersHorizontal }
 ];
 
 export function Layout({ children, onRefresh, refreshing }: LayoutProps) {

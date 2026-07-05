@@ -121,8 +121,8 @@ export function ApiKeysPage() {
     setSuccess('');
     try {
       const parsed = cleanApiKey(draft);
-      if (!parsed.name || !parsed.key) {
-        setMessage('API key name 和 key 都必须填写。');
+      if (!parsed.name) {
+        setMessage('API key name 必须填写。');
         return;
       }
       if (!parsed.allowed_protocols.length) {
@@ -236,7 +236,7 @@ export function ApiKeysPage() {
                   autoComplete="off"
                   value={draft.key}
                   onChange={(event) => patchDraft({ key: event.target.value })}
-                  placeholder="保存时必填"
+                  placeholder="选填"
                 />
                 <button
                   className="button button-ghost"

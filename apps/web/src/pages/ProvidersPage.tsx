@@ -162,8 +162,8 @@ export function ProvidersPage() {
     setSuccess('');
     try {
       const parsed = cleanProvider(draft);
-      if (!parsed.name || !parsed.url || !parsed.key) {
-        setMessage('Provider name、url、key 都必须填写。');
+      if (!parsed.name || !parsed.url) {
+        setMessage('Provider name 和 url 都必须填写。');
         return;
       }
       if (parsed.name.includes('/')) {
@@ -291,7 +291,7 @@ export function ProvidersPage() {
                 autoComplete="off"
                 value={draft.key ?? ''}
                 onChange={(event) => patchDraft({ key: event.target.value })}
-                placeholder="保存时必填"
+                placeholder="选填"
               />
             </label>
           </div>

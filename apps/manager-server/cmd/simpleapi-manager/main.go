@@ -35,6 +35,20 @@ func main() {
 	} else {
 		log.Printf("SimpleAPI Manager admin credential initialized")
 	}
+	defaultSimpleAPIBaseURL := env("SIMPLEAPI_MANAGER_SIMPLEAPI_BASE_URL", "")
+	if defaultSimpleAPIBaseURL != "" {
+		initialized, err := st.EnsureConnection(store.SimpleAPIConnection{
+			BaseURL:       defaultSimpleAPIBaseURL,
+			BasePath:      env("SIMPLEAPI_MANAGER_SIMPLEAPI_BASE_PATH", "/v0/management"),
+			ManagementKey: env("SIMPLEAPI_MANAGER_SIMPLEAPI_ADMIN_KEY", ""),
+		})
+		if err != nil {
+			log.Fatalf("initialize SimpleAPI connection: %v", err)
+		}
+		if initialized {
+			log.Printf("SimpleAPI connection initialized from environment")
+		}
+	}
 	callDB, err := callstore.Open(*dataDir)
 	if err != nil {
 		log.Fatalf("open call log database: %v", err)

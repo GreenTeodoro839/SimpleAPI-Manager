@@ -86,20 +86,28 @@ func (s *Store) VerifyAdminKey(key string) bool {
 }
 
 func (s *Store) SaveConnection(conn SimpleAPIConnection) error {
-	conn.BaseURL = NormalizeBaseURL(conn.BaseURL)
-	conn.BasePath = NormalizeBasePath(conn.BasePath)
-	conn.ManagementKey = strings.TrimSpace(conn.ManagementKey)
-	conn.UpdatedAtMS = time.Now().UnixMilli()
-	if conn.BaseURL == "" {
-		return errors.New("baseUrl is required")
-	}
-	if conn.ManagementKey == "" {
-		return errors.New("managementKey is required")
+	normalized, err := normalizeConnection(conn)
+	if err != nil {
+		return err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.data.Connection = conn
+	s.data.Connection = normalized
 	return s.saveLocked()
+}
+
+func (s *Store) EnsureConnection(conn SimpleAPIConnection) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Connection.BaseURL != "" && s.data.Connection.ManagementKey != "" {
+		return false, nil
+	}
+	normalized, err := normalizeConnection(conn)
+	if err != nil {
+		return false, err
+	}
+	s.data.Connection = normalized
+	return true, s.saveLocked()
 }
 
 func (s *Store) Connection() (SimpleAPIConnection, bool) {
@@ -178,4 +186,18 @@ func NormalizeBasePath(raw string) string {
 		return defaultManagementBasePath
 	}
 	return value
+}
+
+func normalizeConnection(conn SimpleAPIConnection) (SimpleAPIConnection, error) {
+	conn.BaseURL = NormalizeBaseURL(conn.BaseURL)
+	conn.BasePath = NormalizeBasePath(conn.BasePath)
+	conn.ManagementKey = strings.TrimSpace(conn.ManagementKey)
+	conn.UpdatedAtMS = time.Now().UnixMilli()
+	if conn.BaseURL == "" {
+		return SimpleAPIConnection{}, errors.New("baseUrl is required")
+	}
+	if conn.ManagementKey == "" {
+		return SimpleAPIConnection{}, errors.New("managementKey is required")
+	}
+	return conn, nil
 }

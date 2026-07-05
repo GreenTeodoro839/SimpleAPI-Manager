@@ -1,6 +1,6 @@
 # SimpleAPI Manager
 
-SimpleAPI Manager 是一个独立面板项目，不嵌入 SimpleAPI。连接方式参考 CPA-Manager-Plus：
+SimpleAPI Manager 是 SimpleAPI 的 Web 管理面板。Docker 镜像内置 SimpleAPI release 二进制，可以在一个容器里同时运行代理服务和管理面板；本地开发或自定义部署时，也可以只运行 manager-server 去连接外部 SimpleAPI。
 
 - 浏览器只连接本项目的 `manager-server`。
 - `manager-server` 保存 SimpleAPI 地址和 SimpleAPI `management.admin_key`。
@@ -73,22 +73,44 @@ SimpleAPI Manager admin key generated: ...
 docker run -d \
   --name simpleapi-manager \
   -p 18318:18318 \
-  --add-host=host.docker.internal:host-gateway \
+  -p 8317:8317 \
   -v simpleapi-manager-data:/data \
   -e SIMPLEAPI_MANAGER_ADMIN_KEY=change-me \
+  -e PROXY_ADMIN_KEY=change-simpleapi-admin-key \
   ghcr.io/greenteodoro839/simpleapi-manager:latest
 ```
+
+访问：
+
+- 面板：`http://127.0.0.1:18318`
+- SimpleAPI 客户端接口：`http://127.0.0.1:8317`
 
 容器内默认使用：
 
 - `HTTP_ADDR=0.0.0.0:18318`
 - `DATA_DIR=/data`
 - `PANEL_PATH=/app/panel`
+- `SIMPLEAPI_LISTEN=0.0.0.0:8317`
+- `SIMPLEAPI_CONFIG=/data/simpleapi/config.yaml`
+- `SIMPLEAPI_MANAGER_AUTO_CONNECT=true`
+
+镜像构建时会从 `GreenTeodoro839/SimpleAPI` release 下载对应架构的 `proxy-linux-amd64.tar.gz` / `proxy-linux-arm64.tar.gz`，并从仓库里的 `config.yaml` 带入默认配置模板。
+
+启动时如果 `SIMPLEAPI_CONFIG` 指向的配置文件不存在，会把内置模板复制到该位置；如果文件已经存在，则不会覆盖。默认路径是 `/data/simpleapi/config.yaml`，所以生产部署应挂载 `/data`。
 
 `SIMPLEAPI_MANAGER_ADMIN_KEY` 只在新的 `/data` 尚未初始化时生效；已有数据时会继续使用已保存的面板凭据。
-`/data` 同时保存 `manager.json` 和请求监控 SQLite 数据库 `manager.db`，生产部署应挂载 volume。
+`PROXY_ADMIN_KEY` 是 SimpleAPI `management.admin_key` 的环境变量；如果未设置，入口脚本会生成一个并持久化到 `/data/simpleapi/admin_key`，同时写入启动日志。
+`/data` 同时保存 `manager.json`、请求监控 SQLite 数据库 `manager.db`、SimpleAPI 配置和自动生成的 SimpleAPI 管理 key。
 
-如果 SimpleAPI 运行在 Docker 宿主机上，面板的 `SimpleAPI 地址` 填 `http://host.docker.internal:8317`。Linux Docker 需要上面示例里的 `--add-host=host.docker.internal:host-gateway`；Docker Desktop 通常已内置这个主机名。
+默认情况下，manager-server 会在首次启动且尚未保存连接时自动连接容器内 SimpleAPI：`http://127.0.0.1:8317`，管理接口路径为 `/v0/management`。已有连接配置时不会覆盖。设置 `SIMPLEAPI_MANAGER_AUTO_CONNECT=false` 可以关闭这个行为。
+
+如果你仍然想连接运行在 Docker 宿主机上的外部 SimpleAPI，可以在面板 Setup 页面把 `SimpleAPI 地址` 改成 `http://host.docker.internal:8317`。Linux Docker 需要在 `docker run` 加上：
+
+```bash
+--add-host=host.docker.internal:host-gateway
+```
+
+Docker Desktop 通常已内置这个主机名。
 
 ## 构建验证
 

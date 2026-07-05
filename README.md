@@ -97,6 +97,7 @@ docker run -d \
 镜像构建时会从 `GreenTeodoro839/SimpleAPI` release 下载对应架构的 `proxy-linux-amd64.tar.gz` / `proxy-linux-arm64.tar.gz`，并从仓库里的 `config.yaml` 带入默认配置模板。
 
 启动时如果 `SIMPLEAPI_CONFIG` 指向的配置文件不存在，会把内置模板复制到该位置；如果文件已经存在，则不会覆盖。默认路径是 `/data/simpleapi/config.yaml`，所以生产部署应挂载 `/data`。
+入口脚本会先修正 `/data` 下文件和目录的 owner，然后再以非 root 的 `app` 用户启动 SimpleAPI 和 manager-server；手动复制 `manager.json`、`config.yaml` 或创建 `simpleapi/` 目录后，一般不需要再单独处理容器内权限。
 
 `SIMPLEAPI_MANAGER_ADMIN_KEY` 只在新的 `/data` 尚未初始化时生效；已有数据时会继续使用已保存的面板凭据。
 `PROXY_ADMIN_KEY` 是 SimpleAPI `management.admin_key` 的环境变量；如果未设置，入口脚本会生成一个并持久化到 `/data/simpleapi/admin_key`，同时写入启动日志。

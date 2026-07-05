@@ -11,6 +11,25 @@ generate_token() {
   printf '%s%s\n' "$first" "$second" | cut -c1-32
 }
 
+run_as_app() {
+  if [ "$(id -u)" = "0" ]; then
+    su-exec app:app "$@"
+  else
+    "$@"
+  fi
+}
+
+fix_data_permissions() {
+  if [ "$(id -u)" != "0" ]; then
+    return 0
+  fi
+  for path in "$DATA_DIR" "$SIMPLEAPI_DATA_DIR" "$SIMPLEAPI_CONFIG_DIR" "$SIMPLEAPI_ADMIN_KEY_DIR"; do
+    if [ -n "$path" ] && [ "$path" != "/" ] && [ -e "$path" ]; then
+      chown -R app:app "$path"
+    fi
+  done
+}
+
 shutdown() {
   trap - INT TERM
   if [ "${manager_pid:-}" ] && kill -0 "$manager_pid" 2>/dev/null; then
@@ -36,9 +55,13 @@ SIMPLEAPI_CONFIG_DIR="$(dirname "$SIMPLEAPI_CONFIG")"
 SIMPLEAPI_ADMIN_KEY_DIR="$(dirname "$SIMPLEAPI_ADMIN_KEY_FILE")"
 
 mkdir -p "$DATA_DIR" "$SIMPLEAPI_DATA_DIR" "$SIMPLEAPI_CONFIG_DIR" "$SIMPLEAPI_ADMIN_KEY_DIR"
+fix_data_permissions
 
 if [ ! -f "$SIMPLEAPI_CONFIG" ]; then
   cp /app/simpleapi-config.example.yaml "$SIMPLEAPI_CONFIG"
+  if [ "$(id -u)" = "0" ]; then
+    chown app:app "$SIMPLEAPI_CONFIG"
+  fi
   log "initialized SimpleAPI config at $SIMPLEAPI_CONFIG"
 else
   log "using existing SimpleAPI config at $SIMPLEAPI_CONFIG"
@@ -56,6 +79,9 @@ if [ -z "${PROXY_ADMIN_KEY:-}" ]; then
     export PROXY_ADMIN_KEY
     umask 077
     printf '%s\n' "$PROXY_ADMIN_KEY" > "$SIMPLEAPI_ADMIN_KEY_FILE"
+    if [ "$(id -u)" = "0" ]; then
+      chown app:app "$SIMPLEAPI_ADMIN_KEY_FILE"
+    fi
     log "SimpleAPI admin key generated: $PROXY_ADMIN_KEY"
   fi
 fi
@@ -73,7 +99,7 @@ set -- /app/simpleapi -config "$SIMPLEAPI_CONFIG" -listen "$SIMPLEAPI_LISTEN" -l
 if [ "${SIMPLEAPI_LOG_JSON:-false}" = "true" ]; then
   set -- "$@" -log-json
 fi
-"$@" &
+run_as_app "$@" &
 simpleapi_pid="$!"
 log "started SimpleAPI on $SIMPLEAPI_LISTEN"
 
@@ -81,7 +107,7 @@ set -- /app/simpleapi-manager -listen "$HTTP_ADDR" -data "$DATA_DIR" -panel "$PA
 if [ -n "${SIMPLEAPI_MANAGER_ADMIN_KEY:-}" ]; then
   set -- "$@" -admin-key "$SIMPLEAPI_MANAGER_ADMIN_KEY"
 fi
-"$@" &
+run_as_app "$@" &
 manager_pid="$!"
 log "started SimpleAPI Manager on $HTTP_ADDR"
 

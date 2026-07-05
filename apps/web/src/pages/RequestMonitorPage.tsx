@@ -106,11 +106,6 @@ function formatTime(value: string) {
   });
 }
 
-function shortID(value: string) {
-  if (!value) return '--';
-  return value.length > 12 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
-}
-
 function matchesRange(entry: CallLogEntry, range: RangeKey) {
   if (range === 'all') return true;
   const time = new Date(entry.timestamp).getTime();
@@ -128,7 +123,6 @@ function matchesRange(entry: CallLogEntry, range: RangeKey) {
 function includesText(entry: CallLogEntry, query: string) {
   if (!query) return true;
   const haystack = [
-    entry.request_id,
     entry.endpoint,
     entry.api_key,
     entry.alias,
@@ -389,7 +383,7 @@ export function RequestMonitorPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索 request、API Key、模型、Provider、状态码"
+            placeholder="搜索 API Key、模型、Provider、状态码"
           />
         </label>
         <label>
@@ -529,7 +523,6 @@ export function RequestMonitorPage() {
                   <th>耗时</th>
                   <th>时间</th>
                   <th>Tokens</th>
-                  <th>Request</th>
                 </tr>
               </thead>
               <tbody>
@@ -588,9 +581,6 @@ export function RequestMonitorPage() {
                             C {tokenNumber(cacheTokens(tokens))} · R {tokenNumber(tokens.reasoning_tokens ?? 0)}
                           </span>
                         </div>
-                      </td>
-                      <td>
-                        <code>{shortID(entry.request_id)}</code>
                       </td>
                     </tr>
                   );

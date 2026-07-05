@@ -5,7 +5,7 @@ import { usePanelSession } from '@/store/session';
 import { StatCard } from '@/components/StatCard';
 import { Notice } from '@/components/Notice';
 import { EChartsView } from '@/components/EChartsView';
-import { compactNumber, integer, percent, protocolLabel } from '@/utils/format';
+import { compactNumber, percent, protocolLabel, tokenNumber } from '@/utils/format';
 import type { ClientApiKey, InternalModel, Provider, UsageItem } from '@/types';
 
 function usageTokenTotal(item: UsageItem) {
@@ -130,7 +130,7 @@ export function DashboardPage() {
         <StatCard label="内部模型" value={models.length} icon={<Database />} tone="violet" />
         <StatCard label="请求数" value={compactNumber(totals.requests)} icon={<Network />} tone="amber" />
         <StatCard label="成功率" value={percent(totals.successRate)} icon={<AlertTriangle />} tone={totals.failures ? 'red' : 'green'} />
-        <StatCard label="Tokens" value={compactNumber(totals.total)} icon={<Database />} sublabel={`in ${integer(totals.input)} / out ${integer(totals.output)} / cache ${integer(totals.cache)}`} />
+        <StatCard label="Tokens" value={tokenNumber(totals.total)} icon={<Database />} sublabel={`in ${tokenNumber(totals.input)} / out ${tokenNumber(totals.output)} / cache ${tokenNumber(totals.cache)}`} />
       </div>
       <div className="grid two">
         <div className="panel">

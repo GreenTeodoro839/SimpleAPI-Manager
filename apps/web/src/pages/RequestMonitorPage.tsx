@@ -16,7 +16,7 @@ import { usePanelSession } from '@/store/session';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { StatCard } from '@/components/StatCard';
-import { compactNumber, integer, percent, protocolLabel, statusTone } from '@/utils/format';
+import { compactNumber, integer, percent, protocolLabel, statusTone, tokenNumber } from '@/utils/format';
 import type { CallLogEntry, CallLogTokens } from '@/types';
 
 type RangeKey = 'today' | '7d' | '14d' | '30d' | 'all';
@@ -455,19 +455,19 @@ export function RequestMonitorPage() {
           tone={totals.failures ? 'amber' : 'green'}
         />
         <StatCard label="失败" value={compactNumber(totals.failures)} icon={<XCircle />} tone="red" />
-        <StatCard label="Tokens" value={compactNumber(totals.total)} icon={<Database />} tone="violet" />
+        <StatCard label="Tokens" value={tokenNumber(totals.total)} icon={<Database />} tone="violet" />
         <StatCard
           label="缓存"
-          value={compactNumber(totals.cache)}
+          value={tokenNumber(totals.cache)}
           icon={<KeyRound />}
-          sublabel={`推理 ${integer(totals.reasoning)}`}
+          sublabel={`推理 ${tokenNumber(totals.reasoning)}`}
           tone="green"
         />
         <StatCard
           label="平均耗时"
           value={formatDuration(totals.averageLatency)}
           icon={<TimerReset />}
-          sublabel={`I ${integer(totals.input)} / O ${integer(totals.output)}`}
+          sublabel={`I ${tokenNumber(totals.input)} / O ${tokenNumber(totals.output)}`}
           tone="amber"
         />
       </div>
@@ -555,12 +555,12 @@ export function RequestMonitorPage() {
                       <td>{formatTime(entry.timestamp)}</td>
                       <td>
                         <div className="token-stack">
-                          <strong>{compactNumber(tokenTotal(tokens))}</strong>
+                          <strong>{tokenNumber(tokenTotal(tokens))}</strong>
                           <span>
-                            I {integer(tokens.input_tokens ?? 0)} · O {integer(tokens.output_tokens ?? 0)}
+                            I {tokenNumber(tokens.input_tokens ?? 0)} · O {tokenNumber(tokens.output_tokens ?? 0)}
                           </span>
                           <span>
-                            C {integer(cacheTokens(tokens))} · R {integer(tokens.reasoning_tokens ?? 0)}
+                            C {tokenNumber(cacheTokens(tokens))} · R {tokenNumber(tokens.reasoning_tokens ?? 0)}
                           </span>
                         </div>
                       </td>
@@ -603,11 +603,11 @@ export function RequestMonitorPage() {
                     <td>{percent(row.calls ? ((row.calls - row.failures) / row.calls) * 100 : 100)}</td>
                     <td>{integer(row.failures)}</td>
                     <td>{formatDuration(row.calls ? row.latency / row.calls : 0)}</td>
-                    <td>{compactNumber(row.total)}</td>
-                    <td>{compactNumber(row.input)}</td>
-                    <td>{compactNumber(row.output)}</td>
-                    <td>{compactNumber(row.cache)}</td>
-                    <td>{compactNumber(row.reasoning)}</td>
+                    <td>{tokenNumber(row.total)}</td>
+                    <td>{tokenNumber(row.input)}</td>
+                    <td>{tokenNumber(row.output)}</td>
+                    <td>{tokenNumber(row.cache)}</td>
+                    <td>{tokenNumber(row.reasoning)}</td>
                   </tr>
                 ))}
               </tbody>

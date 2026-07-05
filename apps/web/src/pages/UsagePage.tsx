@@ -4,7 +4,7 @@ import { getUsage } from '@/api/managerApi';
 import { usePanelSession } from '@/store/session';
 import { EmptyState } from '@/components/EmptyState';
 import { EChartsView } from '@/components/EChartsView';
-import { integer, protocolLabel, statusTone } from '@/utils/format';
+import { integer, protocolLabel, statusTone, tokenNumber } from '@/utils/format';
 import type { UsageItem } from '@/types';
 
 function usageCacheTokens(item: UsageItem) {
@@ -94,11 +94,11 @@ export function UsagePage() {
                     <td><span className={`badge ${statusTone(item.http_status)}`}>{item.http_status}</span></td>
                     <td>{integer(item.requests)}</td>
                     <td>{integer(item.failures)}</td>
-                    <td>{integer(item.input_tokens)}</td>
-                    <td>{integer(item.output_tokens)}</td>
-                    <td>{integer(usageCacheTokens(item))}</td>
-                    <td>{integer(item.reasoning_tokens ?? 0)}</td>
-                    <td>{integer(usageTotalTokens(item))}</td>
+                    <td>{tokenNumber(item.input_tokens)}</td>
+                    <td>{tokenNumber(item.output_tokens)}</td>
+                    <td>{tokenNumber(usageCacheTokens(item))}</td>
+                    <td>{tokenNumber(item.reasoning_tokens ?? 0)}</td>
+                    <td>{tokenNumber(usageTotalTokens(item))}</td>
                   </tr>
                 ))}
               </tbody>

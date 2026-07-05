@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock3,
   Database,
+  Gauge,
   KeyRound,
   RefreshCw,
   Search,
@@ -59,6 +60,18 @@ function cacheTokens(tokens?: CallLogTokens) {
     numberValue(tokens?.cache_read_tokens) +
     numberValue(tokens?.cache_creation_tokens) +
     numberValue(tokens?.cached_tokens)
+  );
+}
+
+function cacheHitTokens(tokens?: CallLogTokens) {
+  return numberValue(tokens?.cache_read_tokens) + numberValue(tokens?.cached_tokens);
+}
+
+function cacheEligibleInputTokens(tokens?: CallLogTokens) {
+  return (
+    numberValue(tokens?.input_tokens) +
+    numberValue(tokens?.cache_read_tokens) +
+    numberValue(tokens?.cache_creation_tokens)
   );
 }
 
@@ -269,6 +282,8 @@ export function RequestMonitorPage() {
     const input = filteredEntries.reduce((sum, item) => sum + numberValue(item.tokens?.input_tokens), 0);
     const output = filteredEntries.reduce((sum, item) => sum + numberValue(item.tokens?.output_tokens), 0);
     const cache = filteredEntries.reduce((sum, item) => sum + cacheTokens(item.tokens), 0);
+    const cacheHits = filteredEntries.reduce((sum, item) => sum + cacheHitTokens(item.tokens), 0);
+    const cacheEligible = filteredEntries.reduce((sum, item) => sum + cacheEligibleInputTokens(item.tokens), 0);
     const reasoning = filteredEntries.reduce(
       (sum, item) => sum + numberValue(item.tokens?.reasoning_tokens),
       0
@@ -281,9 +296,12 @@ export function RequestMonitorPage() {
       input,
       output,
       cache,
+      cacheHits,
+      cacheEligible,
       reasoning,
       total,
       averageLatency: calls ? latency / calls : 0,
+      cacheHitRate: cacheEligible ? (cacheHits / cacheEligible) * 100 : 0,
       successRate: calls ? ((calls - failures) / calls) * 100 : 100
     };
   }, [filteredEntries]);
@@ -461,6 +479,13 @@ export function RequestMonitorPage() {
           value={tokenNumber(totals.cache)}
           icon={<KeyRound />}
           sublabel={`推理 ${tokenNumber(totals.reasoning)}`}
+          tone="green"
+        />
+        <StatCard
+          label="缓存命中率"
+          value={percent(totals.cacheHitRate)}
+          icon={<Gauge />}
+          sublabel={`${tokenNumber(totals.cacheHits)} / ${tokenNumber(totals.cacheEligible)}`}
           tone="green"
         />
         <StatCard

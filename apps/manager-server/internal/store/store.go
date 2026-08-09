@@ -13,10 +13,7 @@ import (
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/security"
 )
 
-const (
-	defaultManagementBasePath = "/v0/management"
-	legacyManagementBasePath  = "/-/api"
-)
+const defaultManagementBasePath = "/v0/management"
 
 type SimpleAPIConnection struct {
 	BaseURL       string `json:"baseUrl"`
@@ -168,8 +165,7 @@ func NormalizeBaseURL(raw string) string {
 	}
 	value = strings.TrimRight(value, "/")
 	value = strings.TrimSuffix(value, defaultManagementBasePath)
-	value = strings.TrimSuffix(value, legacyManagementBasePath)
-	value = strings.TrimSuffix(value, "/-/health")
+	value = strings.TrimSuffix(value, "/v0/health")
 	return value
 }
 
@@ -182,9 +178,6 @@ func NormalizeBasePath(raw string) string {
 		value = "/" + value
 	}
 	value = strings.TrimRight(value, "/")
-	if value == legacyManagementBasePath {
-		return defaultManagementBasePath
-	}
 	return value
 }
 

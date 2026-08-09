@@ -359,8 +359,8 @@ func mapProxyPath(path string, basePath string) (string, bool) {
 	rest := strings.TrimPrefix(path, "/simpleapi")
 	rest = "/" + strings.TrimLeft(rest, "/")
 	switch {
-	case rest == "/health" || rest == "/-/health":
-		return "/-/health", true
+	case rest == "/health":
+		return "/v0/health", true
 	case rest == "/api":
 		return store.NormalizeBasePath(basePath), true
 	case strings.HasPrefix(rest, "/api/"):

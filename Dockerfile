@@ -25,8 +25,8 @@ RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /ou
 FROM --platform=$BUILDPLATFORM alpine:3.20 AS simpleapi-downloader
 ARG TARGETOS
 ARG TARGETARCH
-ARG SIMPLEAPI_VERSION=v0.3.1
-ARG SIMPLEAPI_CONFIG_REF=v0.3.1
+ARG SIMPLEAPI_VERSION=v0.3.5
+ARG SIMPLEAPI_CONFIG_REF=v0.3.5
 RUN apk add --no-cache ca-certificates curl tar
 RUN set -eux; \
     if [ "$TARGETOS" != "linux" ]; then echo "unsupported target os: $TARGETOS" >&2; exit 1; fi; \

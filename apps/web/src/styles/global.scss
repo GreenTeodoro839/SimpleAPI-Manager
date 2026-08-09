@@ -355,7 +355,13 @@ code {
 }
 
 .model-auth-row {
-  grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) 112px 32px;
+  grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) 112px auto;
+}
+
+.row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .matcher-main-row {

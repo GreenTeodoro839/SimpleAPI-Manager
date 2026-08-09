@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { KeyRound, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, KeyRound, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import {
   createApiKey,
   deleteApiKey,
@@ -113,6 +113,15 @@ export function ApiKeysPage() {
   const removeModel = (index: number) => {
     const next = [...(draft.models ?? [])];
     next.splice(index, 1);
+    patchDraft({ models: next });
+  };
+
+  const moveModel = (index: number, direction: -1 | 1) => {
+    const list = draft.models ?? [];
+    const target = index + direction;
+    if (target < 0 || target >= list.length) return;
+    const next = [...list];
+    [next[index], next[target]] = [next[target], next[index]];
     patchDraft({ models: next });
   };
 
@@ -274,6 +283,7 @@ export function ApiKeysPage() {
                 添加模型
               </button>
             </div>
+            <p className="muted">顺序影响通配 aliasB（含 *）的匹配优先级：靠前的模式先命中。</p>
             <div className="repeat-list">
               {(draft.models ?? []).map((model, index) => (
                 <div className="repeat-row model-auth-row" key={`client-model-${index}`}>
@@ -307,9 +317,29 @@ export function ApiKeysPage() {
                       onChange={(event) => updateModel(index, { priority: Number(event.target.value) })}
                     />
                   </label>
-                  <button className="icon-button" type="button" onClick={() => removeModel(index)}>
-                    <X size={16} />
-                  </button>
+                  <div className="row-actions">
+                    <button
+                      className="icon-button"
+                      type="button"
+                      title="上移"
+                      disabled={index === 0}
+                      onClick={() => moveModel(index, -1)}
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      title="下移"
+                      disabled={index === (draft.models ?? []).length - 1}
+                      onClick={() => moveModel(index, 1)}
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                    <button className="icon-button" type="button" title="删除" onClick={() => removeModel(index)}>
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

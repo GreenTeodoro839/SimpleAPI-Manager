@@ -55,6 +55,15 @@ jobs:
             org.opencontainers.image.title=SimpleAPI Manager
             org.opencontainers.image.description=Web manager panel for SimpleAPI
 
+      - name: Resolve latest SimpleAPI release
+        id: sapi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v=$(gh release view --repo GreenTeodoro839/SimpleAPI --json tagName --jq .tagName)
+          echo "Resolved latest SimpleAPI release: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -64,5 +73,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SIMPLEAPI_VERSION=${{ steps.sapi.outputs.version }}
+            SIMPLEAPI_CONFIG_REF=${{ steps.sapi.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

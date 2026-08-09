@@ -25,8 +25,10 @@ RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /ou
 FROM --platform=$BUILDPLATFORM alpine:3.20 AS simpleapi-downloader
 ARG TARGETOS
 ARG TARGETARCH
-ARG SIMPLEAPI_VERSION=v0.3.5
-ARG SIMPLEAPI_CONFIG_REF=v0.3.5
+# Resolved at build time by .github/workflows/docker.yml to the latest
+# SimpleAPI release tag (e.g. v0.3.5); passed via docker build-args.
+ARG SIMPLEAPI_VERSION
+ARG SIMPLEAPI_CONFIG_REF
 RUN apk add --no-cache ca-certificates curl tar
 RUN set -eux; \
     if [ "$TARGETOS" != "linux" ]; then echo "unsupported target os: $TARGETOS" >&2; exit 1; fi; \

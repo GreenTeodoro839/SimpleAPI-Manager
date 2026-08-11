@@ -50,6 +50,7 @@ export interface ClientModel {
 export interface ClientApiKey {
   name: string;
   key: string;
+  enabled?: boolean;
   allowed_protocols: Protocol[];
   models: ClientModel[];
 }

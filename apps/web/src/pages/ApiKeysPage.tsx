@@ -19,6 +19,7 @@ const protocols: Protocol[] = ['anthropic', 'openai_completion', 'codex'];
 const keyTemplate: ClientApiKey = {
   name: '',
   key: '',
+  enabled: true,
   allowed_protocols: [],
   models: []
 };
@@ -27,6 +28,7 @@ function cloneApiKey(item: ClientApiKey = keyTemplate): ClientApiKey {
   return {
     name: item.name,
     key: item.key ?? '',
+    enabled: item.enabled ?? true,
     allowed_protocols: [...(item.allowed_protocols ?? [])],
     models:
       item.models?.map((model) => ({
@@ -41,6 +43,7 @@ function cleanApiKey(item: ClientApiKey): ClientApiKey {
   return {
     name: item.name.trim(),
     key: item.key.trim(),
+    enabled: item.enabled ?? true,
     allowed_protocols: item.allowed_protocols ?? [],
     models: (item.models ?? [])
       .map((model) => ({
@@ -209,6 +212,7 @@ export function ApiKeysPage() {
                 }}
               >
                 <strong>{item.name}</strong>
+                {item.enabled === false && <span className="badge warning">已禁用</span>}
                 <span>
                   {item.allowed_protocols.join(', ')} · {item.models.length} models
                 </span>
@@ -257,6 +261,20 @@ export function ApiKeysPage() {
                 </button>
               </div>
             </label>
+          </div>
+
+          <div className="subsection">
+            <h3>状态</h3>
+            <div className="checkbox-grid">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={draft.enabled !== false}
+                  onChange={(event) => patchDraft({ enabled: event.target.checked })}
+                />
+                启用（关闭后该 key 不可用，认证阶段直接拒绝）
+              </label>
+            </div>
           </div>
 
           <div className="subsection">

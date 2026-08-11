@@ -12,6 +12,9 @@ import { UsagePage } from '@/pages/UsagePage';
 import { RequestMonitorPage } from '@/pages/RequestMonitorPage';
 import { ModelsPage } from '@/pages/ModelsPage';
 import { ConfigPage } from '@/pages/ConfigPage';
+import { PricesPage } from '@/pages/PricesPage';
+import { UsageControlsPage } from '@/pages/UsageControlsPage';
+import { QuotaPage } from '@/pages/QuotaPage';
 
 function Protected({ children }: { children: ReactNode }) {
   const connected = useSessionStore((state) => state.connected);
@@ -23,6 +26,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/quota/:apiKey" element={<QuotaPage />} />
       <Route
         path="/setup"
         element={
@@ -84,6 +88,22 @@ export default function App() {
         element={
           <Protected>
             <ModelsPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/prices"
+        element={
+          <Protected>
+            <PricesPage />
+          </Protected>
+        }
+      />
+      <Route
+        path="/usage-controls"
+        element={
+          <Protected>
+            <UsageControlsPage />
           </Protected>
         }
       />

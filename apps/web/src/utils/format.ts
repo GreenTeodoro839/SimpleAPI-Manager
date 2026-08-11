@@ -42,3 +42,11 @@ export function maskSecret(value?: string) {
   if (value.length <= 8) return '••••';
   return `${value.slice(0, 4)}••••${value.slice(-4)}`;
 }
+
+// formatCredits renders a credits value with at most 2 decimals (display only;
+// the stored value keeps full float precision).
+export function formatCredits(value?: number) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return '0';
+  return normalized.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}

@@ -130,6 +130,29 @@ func (s *Store) init() error {
 		`CREATE INDEX IF NOT EXISTS idx_call_logs_api_key ON call_logs(api_key)`,
 		`CREATE INDEX IF NOT EXISTS idx_call_logs_internal_model ON call_logs(internal_model)`,
 		`CREATE INDEX IF NOT EXISTS idx_call_logs_failed ON call_logs(failed)`,
+		`CREATE TABLE IF NOT EXISTS model_prices (
+			internal_model TEXT PRIMARY KEY,
+			input_price REAL NOT NULL DEFAULT 0,
+			output_price REAL NOT NULL DEFAULT 0,
+			cache_read_price REAL NOT NULL DEFAULT 0,
+			cache_creation_price REAL NOT NULL DEFAULT 0,
+			cached_price REAL NOT NULL DEFAULT 0,
+			reasoning_price REAL NOT NULL DEFAULT 0,
+			updated_at_ms INTEGER NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS usage_controls (
+			id TEXT PRIMARY KEY,
+			api_key_name TEXT NOT NULL,
+			api_key_value TEXT NOT NULL,
+			limit_5h REAL NOT NULL DEFAULT 0,
+			limit_week REAL NOT NULL DEFAULT 0,
+			auto_disabled INTEGER NOT NULL DEFAULT 0,
+			disable_reason TEXT NOT NULL DEFAULT '',
+			created_at_ms INTEGER NOT NULL,
+			updated_at_ms INTEGER NOT NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_usage_controls_name ON usage_controls(api_key_name)`,
+		`CREATE INDEX IF NOT EXISTS idx_usage_controls_value ON usage_controls(api_key_value)`,
 	}
 	for _, stmt := range statements {
 		if _, err := s.db.Exec(stmt); err != nil {

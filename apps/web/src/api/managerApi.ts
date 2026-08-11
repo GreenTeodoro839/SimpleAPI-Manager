@@ -6,11 +6,14 @@ import type {
   ErrorResponse,
   InternalModel,
   ManagerConfigResponse,
+  ModelPrice,
   PanelSession,
   PayloadConfig,
   Provider,
+  QuotaResponse,
   SetupRequest,
   SimpleApiConfig,
+  UsageControl,
   UsageItem,
   ValidationResult
 } from '@/types';
@@ -216,6 +219,62 @@ export async function getCallLog(session: PanelSession, limit = 300) {
     persisted: data.persisted,
     syncError: data.syncError
   } satisfies CallLogResponse;
+}
+
+// ---- Model pricing (admin) ----
+
+export async function listPrices(session: PanelSession) {
+  const { data } = await client(session).get<{ items: ModelPrice[] }>('/api/prices');
+  return data.items ?? [];
+}
+
+export async function upsertPrice(session: PanelSession, price: ModelPrice) {
+  const { data } = await client(session).post<ModelPrice>('/api/prices', price);
+  return data;
+}
+
+export async function deletePrice(session: PanelSession, internalModel: string) {
+  await client(session).delete('/api/prices', { params: { model: internalModel } });
+}
+
+// ---- Usage controls (admin) ----
+
+export async function listUsageControls(session: PanelSession) {
+  const { data } = await client(session).get<{ items: UsageControl[] }>('/api/usage-controls');
+  return data.items ?? [];
+}
+
+export async function createUsageControl(
+  session: PanelSession,
+  payload: { api_key_name: string; limit_5h: number; limit_week: number }
+) {
+  const { data } = await client(session).post<UsageControl>('/api/usage-controls', payload);
+  return data;
+}
+
+export async function updateUsageControl(
+  session: PanelSession,
+  id: string,
+  payload: { api_key_name: string; api_key_value?: string; limit_5h: number; limit_week: number }
+) {
+  const { data } = await client(session).put<UsageControl>(
+    `/api/usage-controls/${encodeURIComponent(id)}`,
+    payload
+  );
+  return data;
+}
+
+export async function deleteUsageControl(session: PanelSession, id: string) {
+  await client(session).delete(`/api/usage-controls/${encodeURIComponent(id)}`);
+}
+
+// ---- Public quota query (no admin auth; the api-key value is the credential) ----
+
+export async function getQuota(panelBase: string, key: string) {
+  const { data } = await axios.get<QuotaResponse>(`${normalizePanelBase(panelBase)}/api/quota`, {
+    params: { key }
+  });
+  return data;
 }
 
 export function fieldPath(path: string) {

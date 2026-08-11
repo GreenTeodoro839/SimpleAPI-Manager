@@ -4,7 +4,9 @@ import {
   Activity,
   BarChart3,
   Braces,
+  Coins,
   Database,
+  Gauge,
   Key,
   LayoutDashboard,
   LogOut,
@@ -36,6 +38,8 @@ const navItems = [
   { to: '/usage', label: '用量', icon: BarChart3 },
   { to: '/monitoring', label: '请求监控', icon: Activity },
   { to: '/models', label: '模型', icon: Database },
+  { to: '/prices', label: '模型价格', icon: Coins },
+  { to: '/usage-controls', label: '用量控制', icon: Gauge },
   { to: '/config', label: '配置', icon: SlidersHorizontal }
 ];
 

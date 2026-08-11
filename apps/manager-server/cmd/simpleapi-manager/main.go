@@ -60,14 +60,19 @@ func main() {
 		DataDir:   *dataDir,
 		PanelPath: *panelPath,
 	}
-	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.New(cfg, st, callDB, time.Now().UnixMilli()),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	srv := httpapi.New(cfg, st, callDB, time.Now().UnixMilli())
+	go srv.RunEnforcementLoop(ctx)
+
+	server := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           srv,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
 	go func() {
 		log.Printf("simpleapi-manager listening on %s", cfg.HTTPAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

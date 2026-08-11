@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/callstore"
@@ -27,9 +28,14 @@ type Server struct {
 	store     *store.Store
 	callStore *callstore.Store
 	startedAt int64
+	handler   http.Handler
+	enforceMu sync.Mutex
 }
 
-func New(cfg config.Config, st *store.Store, callStore *callstore.Store, startedAt int64) http.Handler {
+// New builds the manager HTTP server and returns the *Server so callers can
+// start background loops (e.g. usage-control enforcement). The server itself
+// satisfies http.Handler.
+func New(cfg config.Config, st *store.Store, callStore *callstore.Store, startedAt int64) *Server {
 	s := &Server{cfg: cfg, store: st, callStore: callStore, startedAt: startedAt}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.health)
@@ -38,9 +44,33 @@ func New(cfg config.Config, st *store.Store, callStore *callstore.Store, started
 	mux.HandleFunc("/api/manager-config", s.managerConfig)
 	mux.HandleFunc("/api/call-log", s.callLog)
 	mux.HandleFunc("/api/usage", s.usage)
+	mux.HandleFunc("GET /api/prices", s.requireAdmin(s.listPrices))
+	mux.HandleFunc("POST /api/prices", s.requireAdmin(s.upsertPrice))
+	mux.HandleFunc("DELETE /api/prices", s.requireAdmin(s.deletePrice))
+	mux.HandleFunc("GET /api/usage-controls", s.requireAdmin(s.listControls))
+	mux.HandleFunc("POST /api/usage-controls", s.requireAdmin(s.createControl))
+	mux.HandleFunc("PUT /api/usage-controls/{id}", s.requireAdmin(s.updateControl))
+	mux.HandleFunc("DELETE /api/usage-controls/{id}", s.requireAdmin(s.deleteControl))
+	mux.HandleFunc("GET /api/quota", s.quota) // public: api-key value supplied via ?key=
 	mux.HandleFunc("/simpleapi/", s.proxySimpleAPI)
 	mux.HandleFunc("/", s.panel)
-	return recoverer(logger(mux))
+	s.handler = recoverer(logger(mux))
+	return s
+}
+
+// ServeHTTP dispatches to the registered mux.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.handler.ServeHTTP(w, r)
+}
+
+// requireAdmin wraps a handler with admin-key authorization.
+func (s *Server) requireAdmin(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.authorize(w, r) {
+			return
+		}
+		h(w, r)
+	}
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -153,7 +183,7 @@ func (s *Server) callLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limit := parseLimit(r.URL.Query().Get("limit"), 300)
-	syncErr := s.syncSimpleAPICallLog(r.Context(), limit)
+	syncErr := s.syncAndEnforce(r.Context(), limit)
 	items, err := s.callStore.Recent(r.Context(), limit)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
@@ -178,7 +208,7 @@ func (s *Server) usage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	syncLimit := parseLimit(r.URL.Query().Get("syncLimit"), 5000)
-	syncErr := s.syncSimpleAPICallLog(r.Context(), syncLimit)
+	syncErr := s.syncAndEnforce(r.Context(), syncLimit)
 	items, err := s.callStore.Usage(r.Context())
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
@@ -332,6 +362,15 @@ func parseLimit(raw string, fallback int) int {
 		return 5000
 	}
 	return limit
+}
+
+// decodeJSON decodes r.Body into target. It returns a descriptive error for
+// malformed JSON so handlers can surface a 400.
+func decodeJSON(r *http.Request, target any) error {
+	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateSimpleAPI(ctx context.Context, conn store.SimpleAPIConnection) error {

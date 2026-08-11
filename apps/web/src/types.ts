@@ -156,6 +156,63 @@ export interface CallLogResponse {
   syncError?: string;
 }
 
+// Model pricing (credits per 1M tokens) keyed by internal_model (provider/aliasA).
+// Each price field maps to one token category; unset/0 contributes nothing.
+export interface ModelPrice {
+  internal_model: string;
+  input_price: number;
+  output_price: number;
+  cache_read_price: number;
+  cache_creation_price: number;
+  cached_price: number;
+  reasoning_price: number;
+  updated_at_ms?: number;
+}
+
+// UsageControl is a spend-limit config tied to an api-key. The id is the stable
+// identity; api_key_name/api_key_value are editable references. usage_5h/week
+// are live computed credits, populated only on list responses.
+export interface UsageControl {
+  id: string;
+  api_key_name: string;
+  api_key_value?: string;
+  limit_5h: number;
+  limit_week: number;
+  auto_disabled: boolean;
+  disable_reason?: string;
+  created_at_ms?: number;
+  updated_at_ms?: number;
+  usage_5h?: number;
+  usage_week?: number;
+}
+
+export interface QuotaWindow {
+  used: number;
+  available: number;
+  limit: number;
+  tokens: CallLogTokens;
+}
+
+export interface QuotaRecentItem {
+  model: string;
+  protocol: string;
+  http_status: number;
+  failed: boolean;
+  time: string;
+  duration_ms: number;
+  tokens: CallLogTokens;
+}
+
+export interface QuotaResponse {
+  configured: boolean;
+  api_key_name?: string;
+  limit_5h?: number;
+  limit_week?: number;
+  usage_5h?: QuotaWindow;
+  usage_week?: QuotaWindow;
+  recent?: QuotaRecentItem[];
+}
+
 export interface ValidationError {
   path: string;
   code: string;

@@ -41,6 +41,48 @@ function tokenBreakdown(tokens?: QuotaWindow['tokens']) {
   ];
 }
 
+function RingCard({ title, used, limit }: { title: string; used: number; limit: number }) {
+  const unlimited = !(limit > 0);
+  const rawPct = unlimited ? 0 : (used / limit) * 100;
+  const displayPct = Math.min(Math.max(rawPct, 0), 100); // 超 100% 一律按 100% 显示
+  const over = !unlimited && rawPct > 100;
+  const near = !unlimited && !over && rawPct >= 80;
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (displayPct / 100) * circumference;
+  const tone = over ? 'red' : near ? 'amber' : 'blue';
+  return (
+    <div className="ring-card">
+      <div className="ring">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle className="ring-bg" cx="50" cy="50" r={radius} fill="none" strokeWidth="9" />
+          <circle
+            className={`ring-fg ring-${tone}`}
+            cx="50"
+            cy="50"
+            r={radius}
+            fill="none"
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference - dash}`}
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+        <div className="ring-label">
+          <strong>{unlimited ? '不限' : `${displayPct.toFixed(0)}%`}</strong>
+          <span>{over ? '已超额' : unlimited ? '未设限额' : '已用占比'}</span>
+        </div>
+      </div>
+      <div className="ring-meta">
+        <div className="ring-title">{title}</div>
+        <div className="muted">
+          {unlimited ? '本窗口未设限额' : `${formatCredits(used)} / ${formatCredits(limit)} credits`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WindowCard({ title, window }: { title: string; window?: QuotaWindow }) {
   if (!window) return null;
   const rows = tokenBreakdown(window.tokens);
@@ -95,6 +137,11 @@ function WindowCard({ title, window }: { title: string; window?: QuotaWindow }) 
 function RecentRow({ item }: { item: QuotaRecentItem }) {
   const tokens = item.tokens ?? {};
   const total = Number(tokens.total_tokens) || 0;
+  const num = (v?: number) => tokenNumber(Number(v) || 0);
+  const cache =
+    (Number(tokens.cache_read_tokens) || 0) +
+    (Number(tokens.cache_creation_tokens) || 0) +
+    (Number(tokens.cached_tokens) || 0);
   return (
     <tr>
       <td><code>{item.model || '-'}</code></td>
@@ -108,7 +155,13 @@ function RecentRow({ item }: { item: QuotaRecentItem }) {
       </td>
       <td>{formatTime(item.time)}</td>
       <td>{formatDuration(item.duration_ms)}</td>
-      <td>{tokenNumber(total)}</td>
+      <td>
+        <div className="token-stack">
+          <strong>{tokenNumber(total)}</strong>
+          <span>I {num(tokens.input_tokens)} · O {num(tokens.output_tokens)}</span>
+          <span>C {tokenNumber(cache)} · R {num(tokens.reasoning_tokens)}</span>
+        </div>
+      </td>
     </tr>
   );
 }
@@ -139,6 +192,7 @@ export function QuotaPage() {
   }, [refresh]);
 
   return (
+    <div className="quota-shell">
     <section className="page quota-page">
       <div className="page-header">
         <div>
@@ -170,6 +224,10 @@ export function QuotaPage() {
         </div>
       ) : (
         <>
+          <div className="panel quota-rings">
+            <RingCard title="最近 5 小时" used={data.usage_5h?.used ?? 0} limit={data.usage_5h?.limit ?? 0} />
+            <RingCard title="最近一周" used={data.usage_week?.used ?? 0} limit={data.usage_week?.limit ?? 0} />
+          </div>
           <WindowCard title="最近 5 小时" window={data.usage_5h} />
           <WindowCard title="最近一周" window={data.usage_week} />
           <div className="panel">
@@ -200,5 +258,6 @@ export function QuotaPage() {
         </>
       )}
     </section>
+    </div>
   );
 }

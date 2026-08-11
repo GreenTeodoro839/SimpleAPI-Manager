@@ -246,6 +246,110 @@ code {
   max-width: 760px;
 }
 
+/* Public quota page lives outside <Layout>, so it has no .content wrapper
+   providing padding/background. .quota-shell reproduces that framing without
+   the sidebar margin, and caps the page width so panels don't span the wall. */
+.quota-shell {
+  min-height: 100vh;
+  padding: var(--content-gap);
+  background:
+    radial-gradient(circle at 50% 0, var(--content-glow) 0, transparent 280px),
+    var(--app-bg);
+}
+
+.quota-shell .page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.quota-rings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.ring-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 4px;
+  min-width: 0;
+}
+
+.ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.ring-bg {
+  stroke: var(--border);
+}
+
+.ring-fg {
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.ring-blue {
+  stroke: var(--primary);
+}
+
+.ring-amber {
+  stroke: var(--amber);
+}
+
+.ring-red {
+  stroke: var(--red);
+}
+
+.ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  span {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+}
+
+.ring-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ring-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .quota-rings {
+    grid-template-columns: 1fr;
+  }
+}
+
 .page-header {
   display: flex;
   align-items: center;

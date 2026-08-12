@@ -138,6 +138,7 @@ func (s *Store) init() error {
 			cache_creation_price REAL NOT NULL DEFAULT 0,
 			cached_price REAL NOT NULL DEFAULT 0,
 			reasoning_price REAL NOT NULL DEFAULT 0,
+			rate_rules TEXT NOT NULL DEFAULT '[]',
 			updated_at_ms INTEGER NOT NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS usage_controls (
@@ -156,6 +157,14 @@ func (s *Store) init() error {
 	}
 	for _, stmt := range statements {
 		if _, err := s.db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	// Migrate existing model_prices tables (added before rate rules) by adding
+	// the rate_rules column. CREATE TABLE above already includes it for fresh
+	// databases, so ignore the "duplicate column" error here.
+	if _, err := s.db.Exec(`ALTER TABLE model_prices ADD COLUMN rate_rules TEXT NOT NULL DEFAULT '[]'`); err != nil {
+		if !strings.Contains(err.Error(), "duplicate column") {
 			return err
 		}
 	}

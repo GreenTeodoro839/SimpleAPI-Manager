@@ -22,20 +22,22 @@ func overLimit(used, limit float64) bool {
 	return limit > 0 && used > limit
 }
 
-// computeControlUsage returns the credits used by a control's api-key in the
-// rolling 5h and weekly windows, applying the supplied price map.
+// computeControlUsage returns the billed credits used by a control's api-key in
+// the rolling 5h and weekly windows, applying each model's base price and its
+// time-of-day rate multiplier (in the server's local timezone).
 func (s *Server) computeControlUsage(ctx context.Context, c callstore.UsageControl, prices map[string]callstore.ModelPrice) (float64, float64) {
 	ids := callstore.DedupeIdentifiers(c.APIKeyName, c.APIKeyValue)
 	now := time.Now().UnixMilli()
-	sum5h, err := s.callStore.UsageByKeyByModel(ctx, ids, now-window5h.Milliseconds())
+	entries5h, err := s.callStore.EntriesByKey(ctx, ids, now-window5h.Milliseconds(), 0)
 	if err != nil {
 		log.Printf("usage: 5h for %s: %v", c.APIKeyName, err)
 	}
-	sumWeek, err := s.callStore.UsageByKeyByModel(ctx, ids, now-windowWeek.Milliseconds())
+	entriesWeek, err := s.callStore.EntriesByKey(ctx, ids, now-windowWeek.Milliseconds(), 0)
 	if err != nil {
 		log.Printf("usage: week for %s: %v", c.APIKeyName, err)
 	}
-	return callstore.Cost(sum5h, prices), callstore.Cost(sumWeek, prices)
+	return callstore.CostForEntries(entries5h, prices, time.Local),
+		callstore.CostForEntries(entriesWeek, prices, time.Local)
 }
 
 // EnforceUsageControls disables api-keys that have exceeded their 5h or weekly
@@ -77,18 +79,18 @@ func (s *Server) EnforceUsageControls(ctx context.Context) {
 				}
 			}()
 			ids := callstore.DedupeIdentifiers(c.APIKeyName, c.APIKeyValue)
-			sum5h, err := s.callStore.UsageByKeyByModel(ctx, ids, since5h)
+			entries5h, err := s.callStore.EntriesByKey(ctx, ids, since5h, 0)
 			if err != nil {
 				log.Printf("enforce: usage5h %s: %v", c.APIKeyName, err)
 				return
 			}
-			sumWeek, err := s.callStore.UsageByKeyByModel(ctx, ids, sinceWeek)
+			entriesWeek, err := s.callStore.EntriesByKey(ctx, ids, sinceWeek, 0)
 			if err != nil {
 				log.Printf("enforce: usageWeek %s: %v", c.APIKeyName, err)
 				return
 			}
-			used5h := callstore.Cost(sum5h, prices)
-			usedWeek := callstore.Cost(sumWeek, prices)
+			used5h := callstore.CostForEntries(entries5h, prices, time.Local)
+			usedWeek := callstore.CostForEntries(entriesWeek, prices, time.Local)
 			over := overLimit(used5h, c.Limit5h) || overLimit(usedWeek, c.LimitWeek)
 
 			switch {

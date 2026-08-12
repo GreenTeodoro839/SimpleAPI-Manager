@@ -104,6 +104,57 @@ func (s *Store) UsageByKeyByModel(ctx context.Context, identifiers []string, sin
 	return items, rows.Err()
 }
 
+// EntriesByKey returns call-log entries matching any identifier within the
+// rolling window [sinceMs, now], for billing (cost-with-multiplier) computation.
+func (s *Store) EntriesByKey(ctx context.Context, identifiers []string, sinceMs int64, limit int) ([]Entry, error) {
+	if len(identifiers) == 0 {
+		return []Entry{}, nil
+	}
+	if limit <= 0 {
+		limit = 50000
+	}
+	args := make([]any, 0, len(identifiers)+2)
+	args = append(args, sinceMs)
+	for _, id := range identifiers {
+		args = append(args, id)
+	}
+	args = append(args, limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT
+			request_id, timestamp, endpoint, api_key, source_protocol, alias, provider, provider_type,
+			model, internal_model, http_status, latency_ms, failed, error, input_tokens, output_tokens,
+			cache_read_tokens, cache_creation_tokens, cached_tokens, reasoning_tokens, total_tokens
+		FROM call_logs
+		WHERE timestamp_ms >= ? AND api_key IN (`+inPlaceholders(len(identifiers))+`)
+		ORDER BY timestamp_ms DESC, id DESC
+		LIMIT ?`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	entries := make([]Entry, 0)
+	for rows.Next() {
+		var entry Entry
+		var timestamp string
+		var failed int
+		if err := rows.Scan(
+			&entry.RequestID, &timestamp, &entry.Endpoint, &entry.APIKey, &entry.SourceProtocol,
+			&entry.Alias, &entry.Provider, &entry.ProviderType, &entry.Model, &entry.InternalModel,
+			&entry.HTTPStatus, &entry.LatencyMS, &failed, &entry.Error,
+			&entry.Tokens.InputTokens, &entry.Tokens.OutputTokens, &entry.Tokens.CacheReadTokens,
+			&entry.Tokens.CacheCreationTokens, &entry.Tokens.CachedTokens, &entry.Tokens.ReasoningTokens,
+			&entry.Tokens.TotalTokens,
+		); err != nil {
+			return nil, err
+		}
+		if parsed, err := time.Parse(time.RFC3339Nano, timestamp); err == nil {
+			entry.Timestamp = parsed
+		}
+		entry.Failed = failed != 0
+		entries = append(entries, entry)
+	}
+	return entries, rows.Err()
+}
+
 // RecentByKey returns the most recent call-log entries matching any identifier.
 func (s *Store) RecentByKey(ctx context.Context, identifiers []string, limit int) ([]Entry, error) {
 	if len(identifiers) == 0 {
@@ -182,6 +233,22 @@ func SumTokens(items []PerModelUsage) TokenSums {
 		out.CachedTokens += item.Tokens.CachedTokens
 		out.ReasoningTokens += item.Tokens.ReasoningTokens
 		out.TotalTokens += item.Tokens.TotalTokens
+	}
+	return out
+}
+
+// SumEntryTokens totals each token category across raw entries (for the quota
+// page's token breakdown, independent of cost/multiplier).
+func SumEntryTokens(entries []Entry) TokenSums {
+	var out TokenSums
+	for _, e := range entries {
+		out.InputTokens += e.Tokens.InputTokens
+		out.OutputTokens += e.Tokens.OutputTokens
+		out.CacheReadTokens += e.Tokens.CacheReadTokens
+		out.CacheCreationTokens += e.Tokens.CacheCreationTokens
+		out.CachedTokens += e.Tokens.CachedTokens
+		out.ReasoningTokens += e.Tokens.ReasoningTokens
+		out.TotalTokens += e.Tokens.TotalTokens
 	}
 	return out
 }

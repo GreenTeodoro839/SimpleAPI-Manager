@@ -156,6 +156,17 @@ export interface CallLogResponse {
   syncError?: string;
 }
 
+// A time-based price multiplier for one model. Weekdays is 0-6 (0=Sunday);
+// empty means every day. StartHour/EndHour form a half-open [start, end) range
+// in 0..24; start>=end wraps across midnight. Multiplier defaults to 1.
+export interface RateRule {
+  name?: string;
+  weekdays?: number[];
+  start_hour: number;
+  end_hour: number;
+  multiplier: number;
+}
+
 // Model pricing (credits per 1M tokens) keyed by internal_model (provider/aliasA).
 // Each price field maps to one token category; unset/0 contributes nothing.
 export interface ModelPrice {
@@ -166,6 +177,7 @@ export interface ModelPrice {
   cache_creation_price: number;
   cached_price: number;
   reasoning_price: number;
+  rate_rules?: RateRule[];
   updated_at_ms?: number;
 }
 

@@ -71,18 +71,18 @@ func (s *Server) quota(w http.ResponseWriter, r *http.Request) {
 	}
 	ids := callstore.DedupeIdentifiers(control.APIKeyName, control.APIKeyValue)
 	now := time.Now().UnixMilli()
-	sums5h, err := s.callStore.UsageByKeyByModel(r.Context(), ids, now-window5h.Milliseconds())
+	entries5h, err := s.callStore.EntriesByKey(r.Context(), ids, now-window5h.Milliseconds(), 0)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
 		return
 	}
-	sumsWeek, err := s.callStore.UsageByKeyByModel(r.Context(), ids, now-windowWeek.Milliseconds())
+	entriesWeek, err := s.callStore.EntriesByKey(r.Context(), ids, now-windowWeek.Milliseconds(), 0)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
 		return
 	}
-	used5h := callstore.Cost(sums5h, prices)
-	usedWeek := callstore.Cost(sumsWeek, prices)
+	used5h := callstore.CostForEntries(entries5h, prices, time.Local)
+	usedWeek := callstore.CostForEntries(entriesWeek, prices, time.Local)
 
 	// Resolve aliasB server-side (do NOT echo the raw models[] config publicly).
 	aliasBByModel := map[string]string{}
@@ -125,8 +125,8 @@ func (s *Server) quota(w http.ResponseWriter, r *http.Request) {
 		APIKeyName: control.APIKeyName,
 		Limit5h:    control.Limit5h,
 		LimitWeek:  control.LimitWeek,
-		Usage5h:    makeWindow(used5h, control.Limit5h, callstore.SumTokens(sums5h)),
-		UsageWeek:  makeWindow(usedWeek, control.LimitWeek, callstore.SumTokens(sumsWeek)),
+		Usage5h:    makeWindow(used5h, control.Limit5h, callstore.SumEntryTokens(entries5h)),
+		UsageWeek:  makeWindow(usedWeek, control.LimitWeek, callstore.SumEntryTokens(entriesWeek)),
 		Recent:     recent,
 	})
 }

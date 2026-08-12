@@ -9,6 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	// Embed the timezone database so rate-rule hour/weekday matching follows the
+	// container's TZ (defaults to Asia/Shanghai via the Docker image) even when
+	// the base image has no system tzdata.
+	_ "time/tzdata"
 
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/callstore"
 	"github.com/GreenTeodoro839/SimpleAPI-Manager/apps/manager-server/internal/config"

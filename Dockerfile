@@ -47,7 +47,7 @@ RUN set -eux; \
     curl -fsSL "https://raw.githubusercontent.com/GreenTeodoro839/SimpleAPI/${SIMPLEAPI_CONFIG_REF}/config.yaml" -o /out/simpleapi-config.example.yaml
 
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates su-exec tini && \
+RUN apk add --no-cache ca-certificates su-exec tini tzdata && \
     addgroup -S app && \
     adduser -S -D -H -G app -u 10001 app && \
     mkdir -p /app /data && \
@@ -66,6 +66,10 @@ ENV PANEL_PATH=/app/panel
 ENV SIMPLEAPI_LISTEN=0.0.0.0:8317
 ENV SIMPLEAPI_LOG_LEVEL=info
 ENV SIMPLEAPI_MANAGER_AUTO_CONNECT=true
+# Default the container to Beijing time so model rate-rule hour/weekday windows
+# and log timestamps match the operator's expectation. Override with `docker -e
+# TZ=...` if a different timezone is needed.
+ENV TZ=Asia/Shanghai
 
 EXPOSE 18318 8317
 VOLUME ["/data"]

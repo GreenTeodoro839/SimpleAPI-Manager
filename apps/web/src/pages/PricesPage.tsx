@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Coins, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Coins, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import { deletePrice, errorMessage, listModels, listPrices, upsertPrice } from '@/api/managerApi';
 import { usePanelSession } from '@/store/session';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { formatCredits } from '@/utils/format';
-import type { InternalModel, ModelPrice } from '@/types';
+import type { InternalModel, ModelPrice, RateRule } from '@/types';
 
 type PriceKey =
   | 'input_price'
@@ -24,6 +24,8 @@ const priceFields: Array<{ key: PriceKey; label: string; hint: string }> = [
   { key: 'reasoning_price', label: '推理', hint: 'reasoning_tokens' }
 ];
 
+const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']; // index 0 = Sunday
+
 function blankPrice(internalModel: string): ModelPrice {
   return {
     internal_model: internalModel,
@@ -32,8 +34,17 @@ function blankPrice(internalModel: string): ModelPrice {
     cache_read_price: 0,
     cache_creation_price: 0,
     cached_price: 0,
-    reasoning_price: 0
+    reasoning_price: 0,
+    rate_rules: []
   };
+}
+
+function blankRule(): RateRule {
+  return { name: '', weekdays: [], start_hour: 0, end_hour: 24, multiplier: 1 };
+}
+
+function cloneRateRules(rules?: RateRule[]): RateRule[] {
+  return (rules ?? []).map((rule) => ({ ...rule, weekdays: rule.weekdays ? [...rule.weekdays] : [] }));
 }
 
 function isConfigured(price?: ModelPrice) {
@@ -47,6 +58,8 @@ function isConfigured(price?: ModelPrice) {
     price.reasoning_price > 0
   );
 }
+
+const HOUR_OPTIONS = Array.from({ length: 25 }, (_, hour) => hour); // 0..24
 
 export function PricesPage() {
   const session = usePanelSession();
@@ -69,8 +82,9 @@ export function PricesPage() {
       });
       setPriceMap(map);
       if (!selected && modelRows[0]) {
+        const first = map[modelRows[0].id] ?? blankPrice(modelRows[0].id);
         setSelected(modelRows[0].id);
-        setDraft(map[modelRows[0].id] ?? blankPrice(modelRows[0].id));
+        setDraft({ ...first, rate_rules: cloneRateRules(first.rate_rules) });
       }
     } catch (error) {
       setMessage(errorMessage(error));
@@ -86,7 +100,12 @@ export function PricesPage() {
 
   const selectModel = (id: string) => {
     setSelected(id);
-    setDraft(priceMap[id] ? { ...priceMap[id] } : blankPrice(id));
+    const existing = priceMap[id];
+    setDraft(
+      existing
+        ? { ...existing, rate_rules: cloneRateRules(existing.rate_rules) }
+        : blankPrice(id)
+    );
     setMessage('');
     setSuccess('');
   };
@@ -96,10 +115,53 @@ export function PricesPage() {
     setDraft((current) => ({ ...current, [key]: Number.isFinite(numeric) ? numeric : 0 }));
   };
 
+  const addRule = () =>
+    setDraft((current) => ({
+      ...current,
+      rate_rules: [...cloneRateRules(current.rate_rules), blankRule()]
+    }));
+
+  const updateRule = (index: number, patchRule: Partial<RateRule>) =>
+    setDraft((current) => {
+      const rules = cloneRateRules(current.rate_rules);
+      rules[index] = { ...rules[index], ...patchRule };
+      return { ...current, rate_rules: rules };
+    });
+
+  const removeRule = (index: number) =>
+    setDraft((current) => ({
+      ...current,
+      rate_rules: cloneRateRules(current.rate_rules).filter((_, i) => i !== index)
+    }));
+
+  const moveRule = (index: number, direction: -1 | 1) =>
+    setDraft((current) => {
+      const rules = cloneRateRules(current.rate_rules);
+      const target = index + direction;
+      if (target < 0 || target >= rules.length) return current;
+      [rules[index], rules[target]] = [rules[target], rules[index]];
+      return { ...current, rate_rules: rules };
+    });
+
+  const toggleWeekday = (index: number, day: number) =>
+    setDraft((current) => {
+      const rules = cloneRateRules(current.rate_rules);
+      const set = new Set(rules[index].weekdays ?? []);
+      if (set.has(day)) {
+        set.delete(day);
+      } else {
+        set.add(day);
+      }
+      rules[index].weekdays = [0, 1, 2, 3, 4, 5, 6].filter((value) => set.has(value));
+      return { ...current, rate_rules: rules };
+    });
+
   const configuredCount = useMemo(
-    () => models.filter((m) => isConfigured(priceMap[m.id])).length,
+    () => models.filter((model) => isConfigured(priceMap[model.id])).length,
     [models, priceMap]
   );
+
+  const rules = draft.rate_rules ?? [];
 
   const save = async () => {
     setMessage('');
@@ -157,6 +219,7 @@ export function PricesPage() {
             models.map((model) => {
               const price = priceMap[model.id];
               const configured = isConfigured(price);
+              const ruleCount = price?.rate_rules?.length ?? 0;
               return (
                 <button
                   className={`list-item ${model.id === selected ? 'active' : ''}`}
@@ -168,6 +231,7 @@ export function PricesPage() {
                     <span>
                       in {formatCredits(price?.input_price)} · out {formatCredits(price?.output_price)} · cache{' '}
                       {formatCredits((price?.cache_read_price ?? 0) + (price?.cached_price ?? 0))}
+                      {ruleCount > 0 ? ` · ${ruleCount} 条倍率` : ''}
                     </span>
                   ) : (
                     <span className="muted">未设置（按 0 计）</span>
@@ -220,6 +284,130 @@ export function PricesPage() {
                     <span className="muted">credits / 1M token · {field.hint}</span>
                   </label>
                 ))}
+              </div>
+
+              <div className="subsection">
+                <div className="subsection-header">
+                  <h3>时段倍率</h3>
+                  <button className="button button-ghost" type="button" onClick={addRule}>
+                    <Plus size={16} />
+                    添加规则
+                  </button>
+                </div>
+                <p className="muted">
+                  按列表顺序匹配第一条命中的规则，乘到该请求的费用上；都不命中则用默认倍率 1。不填星期表示每天；
+                  时间区间为半开 [起始, 结束)，结束可填 24（=午夜），起始 ≥ 结束 表示跨午夜（如 22 ~ 6）。
+                  倍率 <strong>0 = 该时段免费</strong>；留空或未匹配规则按 1 计。时间按容器时区判断（镜像默认北京时间）。
+                </p>
+                <div className="repeat-list">
+                  {rules.length === 0 ? (
+                    <EmptyState title="未设置时段倍率（默认 1）" compact />
+                  ) : (
+                    rules.map((rule, index) => {
+                      const weekdays = rule.weekdays ?? [];
+                      return (
+                        <div className="rate-rule-row" key={`rate-${index}`}>
+                          <div className="rate-rule-line">
+                            <label>
+                              名称
+                              <input
+                                value={rule.name ?? ''}
+                                onChange={(event) => updateRule(index, { name: event.target.value })}
+                                placeholder="如：高峰"
+                              />
+                            </label>
+                            <label>
+                              起始
+                              <select
+                                value={rule.start_hour}
+                                onChange={(event) => updateRule(index, { start_hour: Number(event.target.value) })}
+                              >
+                                {HOUR_OPTIONS.slice(0, 24).map((hour) => (
+                                  <option key={hour} value={hour}>
+                                    {String(hour).padStart(2, '0')}:00
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <span className="muted">~</span>
+                            <label>
+                              结束
+                              <select
+                                value={rule.end_hour}
+                                onChange={(event) => updateRule(index, { end_hour: Number(event.target.value) })}
+                              >
+                                {HOUR_OPTIONS.slice(1).map((hour) => (
+                                  <option key={hour} value={hour}>
+                                    {String(hour).padStart(2, '0')}:00
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              倍率
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={rule.multiplier}
+                                onChange={(event) => {
+                                  const n = event.target.value === '' ? 1 : Number(event.target.value);
+                                  updateRule(index, { multiplier: Number.isFinite(n) ? n : 1 });
+                                }}
+                                placeholder="1"
+                              />
+                              <span className="muted">0 = 免费</span>
+                            </label>
+                            <div className="row-actions">
+                              <button
+                                className="icon-button"
+                                type="button"
+                                title="上移"
+                                disabled={index === 0}
+                                onClick={() => moveRule(index, -1)}
+                              >
+                                <ArrowUp size={16} />
+                              </button>
+                              <button
+                                className="icon-button"
+                                type="button"
+                                title="下移"
+                                disabled={index === rules.length - 1}
+                                onClick={() => moveRule(index, 1)}
+                              >
+                                <ArrowDown size={16} />
+                              </button>
+                              <button
+                                className="icon-button"
+                                type="button"
+                                title="删除"
+                                onClick={() => removeRule(index)}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="weekday-chips">
+                            {WEEKDAY_LABELS.map((label, day) => {
+                              const checked = weekdays.includes(day);
+                              return (
+                                <label className={`chip ${checked ? 'checked' : ''}`} key={day}>
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleWeekday(index, day)}
+                                  />
+                                  {label}
+                                </label>
+                              );
+                            })}
+                            {weekdays.length === 0 && <span className="muted">每天</span>}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </>
           )}

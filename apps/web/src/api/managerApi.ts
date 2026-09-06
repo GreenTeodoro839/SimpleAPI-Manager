@@ -206,18 +206,21 @@ export async function getUsage(session: PanelSession) {
   return data.items ?? [];
 }
 
-export async function getCallLog(session: PanelSession, limit = 300) {
+// cursor pages back through older entries; omit it for the newest page.
+export async function getCallLog(session: PanelSession, limit = 300, cursor = '') {
   const { data } = await client(session).get<{
     items: CallLogEntry[] | null;
     persisted?: boolean;
     syncError?: string;
+    next_cursor?: string;
   }>('/api/call-log', {
-    params: { limit }
+    params: cursor ? { limit, cursor } : { limit }
   });
   return {
     items: data.items ?? [],
     persisted: data.persisted,
-    syncError: data.syncError
+    syncError: data.syncError,
+    nextCursor: data.next_cursor ?? ''
   } satisfies CallLogResponse;
 }
 

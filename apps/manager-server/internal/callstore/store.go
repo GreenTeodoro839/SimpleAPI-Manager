@@ -236,30 +236,71 @@ func (s *Store) SaveEntries(ctx context.Context, entries []Entry) (int64, error)
 	return inserted, err
 }
 
+// Cursor points at the last row of a page, for keyset pagination over
+// (timestamp_ms DESC, id DESC). The zero value starts from the newest row.
+type Cursor struct {
+	TimestampMS int64
+	ID          int64
+}
+
+// Valid reports whether the cursor points at a row.
+func (c Cursor) Valid() bool { return c.ID > 0 }
+
+// Page is one page of call-log entries plus the cursor to continue from.
+type Page struct {
+	Entries []Entry
+	Next    Cursor
+	HasMore bool
+}
+
+// Recent returns the newest entries, newest first.
 func (s *Store) Recent(ctx context.Context, limit int) ([]Entry, error) {
+	page, err := s.RecentPage(ctx, limit, Cursor{})
+	if err != nil {
+		return nil, err
+	}
+	return page.Entries, nil
+}
+
+// RecentPage returns one page of entries older than cursor, newest first. It
+// reads limit+1 rows so HasMore needs no second query: the panel pages back
+// through history with "load more" instead of one ever-larger request.
+func (s *Store) RecentPage(ctx context.Context, limit int, cursor Cursor) (Page, error) {
 	if limit <= 0 {
 		limit = 300
 	}
 	if limit > 5000 {
 		limit = 5000
 	}
+	where := ""
+	args := make([]any, 0, 4)
+	if cursor.Valid() {
+		where = `WHERE (timestamp_ms < ? OR (timestamp_ms = ? AND id < ?))`
+		args = append(args, cursor.TimestampMS, cursor.TimestampMS, cursor.ID)
+	}
+	args = append(args, limit+1)
 	rows, err := s.db.QueryContext(ctx, `SELECT
-		request_id, timestamp, endpoint, api_key, source_protocol, alias, provider, provider_type,
-		model, internal_model, http_status, latency_ms, failed, error, input_tokens, output_tokens,
-		cache_read_tokens, cache_creation_tokens, cached_tokens, reasoning_tokens, total_tokens
+		id, timestamp_ms, request_id, timestamp, endpoint, api_key, source_protocol, alias, provider,
+		provider_type, model, internal_model, http_status, latency_ms, failed, error, input_tokens,
+		output_tokens, cache_read_tokens, cache_creation_tokens, cached_tokens, reasoning_tokens,
+		total_tokens
 		FROM call_logs
+		`+where+`
 		ORDER BY timestamp_ms DESC, id DESC
-		LIMIT ?`, limit)
+		LIMIT ?`, args...)
 	if err != nil {
-		return nil, err
+		return Page{}, err
 	}
 	defer rows.Close()
-	entries := make([]Entry, 0, limit)
+	page := Page{Entries: make([]Entry, 0, limit)}
 	for rows.Next() {
+		var id, timestampMS int64
 		var entry Entry
 		var timestamp string
 		var failed int
 		if err := rows.Scan(
+			&id,
+			&timestampMS,
 			&entry.RequestID,
 			&timestamp,
 			&entry.Endpoint,
@@ -282,16 +323,25 @@ func (s *Store) Recent(ctx context.Context, limit int) ([]Entry, error) {
 			&entry.Tokens.ReasoningTokens,
 			&entry.Tokens.TotalTokens,
 		); err != nil {
-			return nil, err
+			return Page{}, err
+		}
+		if len(page.Entries) == limit {
+			// The extra row only proves older rows exist; don't return it.
+			page.HasMore = true
+			break
 		}
 		parsed, err := time.Parse(time.RFC3339Nano, timestamp)
 		if err == nil {
 			entry.Timestamp = parsed
 		}
 		entry.Failed = failed != 0
-		entries = append(entries, entry)
+		page.Entries = append(page.Entries, entry)
+		page.Next = Cursor{TimestampMS: timestampMS, ID: id}
 	}
-	return entries, rows.Err()
+	if err := rows.Err(); err != nil {
+		return Page{}, err
+	}
+	return page, nil
 }
 
 func (s *Store) Usage(ctx context.Context) ([]UsageItem, error) {

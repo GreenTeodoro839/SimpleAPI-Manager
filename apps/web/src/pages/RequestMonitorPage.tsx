@@ -3,6 +3,7 @@ import type { FocusEvent, MouseEvent } from 'react';
 import {
   Activity,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Database,
   Gauge,
@@ -18,7 +19,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { StatCard } from '@/components/StatCard';
 import { compactNumber, integer, percent, protocolLabel, statusTone, tokenNumber } from '@/utils/format';
-import type { CallLogEntry, CallLogTokens } from '@/types';
+import type { CallLogEntry, CallLogResponse, CallLogTokens } from '@/types';
 
 type RangeKey = 'today' | '7d' | '14d' | '30d' | 'all';
 type ViewMode = 'realtime' | 'api_key' | 'model';
@@ -192,12 +193,38 @@ function groupEntries(
   return Array.from(grouped.values()).sort((a, b) => b.calls - a.calls);
 }
 
+// Identity of one call-log row, used both as the React key and to dedupe
+// pages against each other.
+function entryKey(entry: CallLogEntry) {
+  return `${entry.request_id}-${entry.timestamp}-${entry.provider}-${entry.http_status}`;
+}
+
+interface CallLog {
+  entries: CallLogEntry[];
+  // Cursor of the oldest loaded page; empty once everything is loaded.
+  cursor: string;
+}
+
+// Auto-refresh only re-fetches the newest page, so fold it into whatever the
+// user has already paged in. If the two don't overlap at all, more than a full
+// page arrived since the last refresh and keeping the old rows would leave a
+// hole in the middle -- start over from the fresh page instead.
+function mergeHead(prev: CallLog, head: CallLogResponse): CallLog {
+  const fresh: CallLog = { entries: head.items, cursor: head.nextCursor };
+  if (prev.entries.length === 0) return fresh;
+  const incoming = new Set(head.items.map(entryKey));
+  const older = prev.entries.filter((entry) => !incoming.has(entryKey(entry)));
+  if (older.length === prev.entries.length) return fresh;
+  return { entries: [...head.items, ...older], cursor: prev.cursor };
+}
+
 export function RequestMonitorPage() {
   const session = usePanelSession();
-  const [entries, setEntries] = useState<CallLogEntry[]>([]);
+  const [log, setLog] = useState<CallLog>({ entries: [], cursor: '' });
   const [message, setMessage] = useState('');
   const [syncWarning, setSyncWarning] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [range, setRange] = useState<RangeKey>('7d');
   const [viewMode, setViewMode] = useState<ViewMode>('realtime');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -219,7 +246,7 @@ export function RequestMonitorPage() {
     setMessage('');
     try {
       const result = await getCallLog(session, limit);
-      setEntries(result.items);
+      setLog((prev) => mergeHead(prev, result));
       setSyncWarning(result.syncError ?? '');
     } catch (error) {
       setMessage(errorMessage(error));
@@ -228,6 +255,33 @@ export function RequestMonitorPage() {
       setLoading(false);
     }
   }, [limit, session]);
+
+  // Append the next older page. History lives in manager.db forever, so this
+  // can be clicked until everything is loaded.
+  const loadMore = useCallback(async () => {
+    if (!log.cursor || loadingMore) return;
+    setLoadingMore(true);
+    setMessage('');
+    try {
+      const result = await getCallLog(session, limit, log.cursor);
+      setLog((prev) => {
+        const seen = new Set(prev.entries.map(entryKey));
+        return {
+          entries: [...prev.entries, ...result.items.filter((entry) => !seen.has(entryKey(entry)))],
+          cursor: result.nextCursor
+        };
+      });
+    } catch (error) {
+      setMessage(errorMessage(error));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [limit, loadingMore, log.cursor, session]);
+
+  // A new page size restarts paging from the newest entries.
+  useEffect(() => {
+    setLog({ entries: [], cursor: '' });
+  }, [limit]);
 
   useEffect(() => {
     void refresh();
@@ -238,6 +292,8 @@ export function RequestMonitorPage() {
     const id = window.setInterval(() => void refresh(), refreshSeconds * 1000);
     return () => window.clearInterval(id);
   }, [autoRefresh, refresh, refreshSeconds]);
+
+  const entries = log.entries;
 
   const filterOptions = useMemo(() => {
     const apiKeys = new Set<string>();
@@ -428,7 +484,7 @@ export function RequestMonitorPage() {
           </select>
         </label>
         <label>
-          最近
+          每页
           <select value={limit} onChange={(event) => setLimit(Number(event.target.value))}>
             <option value={100}>100 条</option>
             <option value={300}>300 条</option>
@@ -530,7 +586,7 @@ export function RequestMonitorPage() {
                   const failed = isFailed(entry);
                   const tokens = entry.tokens ?? {};
                   return (
-                    <tr key={`${entry.request_id}-${entry.timestamp}-${entry.provider}-${entry.http_status}`}>
+                    <tr key={entryKey(entry)}>
                       <td>
                         <div className="cell-stack">
                           <strong>{entry.api_key || '未知 Key'}</strong>
@@ -635,7 +691,19 @@ export function RequestMonitorPage() {
         <Clock3 size={14} />
         <span>
           已加载 {integer(entries.length)} 条 · 当前显示 {integer(filteredEntries.length)} 条
+          {entries.length > 0 && !log.cursor ? ' · 已全部加载' : ''}
         </span>
+        {log.cursor && (
+          <button
+            className="button button-ghost"
+            type="button"
+            disabled={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            <ChevronDown size={14} />
+            {loadingMore ? '加载中…' : `继续加载 ${integer(limit)} 条`}
+          </button>
+        )}
       </div>
       {errorTooltip && (
         <div

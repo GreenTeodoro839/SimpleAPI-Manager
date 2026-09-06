@@ -2,6 +2,7 @@ package callstore
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -125,5 +126,98 @@ func TestStoreUsageAggregatesPersistedEntries(t *testing.T) {
 	if gotFailed.HTTPStatus != 529 || gotFailed.Requests != 1 || gotFailed.Failures != 1 {
 		t.Fatalf("failed row = status %d requests %d failures %d, want 529/1/1",
 			gotFailed.HTTPStatus, gotFailed.Requests, gotFailed.Failures)
+	}
+}
+
+func TestRecentPagePagesThroughAllEntries(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer st.Close()
+
+	base := time.Date(2026, 7, 5, 1, 0, 0, 0, time.UTC)
+	entries := make([]Entry, 0, 25)
+	for i := 0; i < 25; i++ {
+		entries = append(entries, Entry{
+			RequestID:     "req_" + strconv.Itoa(i),
+			Timestamp:     base.Add(time.Duration(i) * time.Second),
+			APIKey:        "Claude Code",
+			InternalModel: "claude/GLM-Pro",
+			HTTPStatus:    200,
+		})
+	}
+	if _, err := st.SaveEntries(context.Background(), entries); err != nil {
+		t.Fatalf("SaveEntries() error = %v", err)
+	}
+
+	var (
+		seen   []string
+		cursor Cursor
+		pages  int
+	)
+	for {
+		page, err := st.RecentPage(context.Background(), 10, cursor)
+		if err != nil {
+			t.Fatalf("RecentPage() error = %v", err)
+		}
+		pages++
+		for _, entry := range page.Entries {
+			seen = append(seen, entry.RequestID)
+		}
+		if !page.HasMore {
+			break
+		}
+		cursor = page.Next
+		if pages > 10 {
+			t.Fatalf("pagination did not terminate")
+		}
+	}
+	if pages != 3 {
+		t.Fatalf("pages = %d, want 3", pages)
+	}
+	if len(seen) != len(entries) {
+		t.Fatalf("len(seen) = %d, want %d", len(seen), len(entries))
+	}
+	// Newest first, with no repeats across page boundaries.
+	unique := make(map[string]bool, len(seen))
+	for _, id := range seen {
+		if unique[id] {
+			t.Fatalf("request %q returned twice", id)
+		}
+		unique[id] = true
+	}
+	if seen[0] != "req_24" || seen[len(seen)-1] != "req_0" {
+		t.Fatalf("order = %q..%q, want req_24..req_0", seen[0], seen[len(seen)-1])
+	}
+}
+
+func TestRecentPageLastPageHasNoMore(t *testing.T) {
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer st.Close()
+
+	entry := Entry{
+		RequestID:  "req_only",
+		Timestamp:  time.Date(2026, 7, 5, 1, 2, 3, 0, time.UTC),
+		APIKey:     "Claude Code",
+		HTTPStatus: 200,
+	}
+	if _, err := st.SaveEntries(context.Background(), []Entry{entry}); err != nil {
+		t.Fatalf("SaveEntries() error = %v", err)
+	}
+	// Exactly as many rows as the page size: HasMore must stay false so the
+	// panel doesn't offer a "load more" that returns nothing.
+	page, err := st.RecentPage(context.Background(), 1, Cursor{})
+	if err != nil {
+		t.Fatalf("RecentPage() error = %v", err)
+	}
+	if len(page.Entries) != 1 {
+		t.Fatalf("len(entries) = %d, want 1", len(page.Entries))
+	}
+	if page.HasMore {
+		t.Fatalf("HasMore = true, want false")
 	}
 }

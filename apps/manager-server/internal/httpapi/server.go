@@ -183,20 +183,59 @@ func (s *Server) callLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limit := parseLimit(r.URL.Query().Get("limit"), 300)
-	syncErr := s.syncAndEnforce(r.Context(), limit)
-	items, err := s.callStore.Recent(r.Context(), limit)
+	cursor, ok := parseCallLogCursor(r.URL.Query().Get("cursor"))
+	if !ok {
+		response.Error(w, http.StatusBadRequest, "invalid_cursor", "cursor must be \"<timestamp_ms>_<id>\"")
+		return
+	}
+	// Only the first page syncs from SimpleAPI: older pages are already in the
+	// database, so paging back doesn't re-poll the proxy on every click.
+	var syncErr error
+	if !cursor.Valid() {
+		syncErr = s.syncAndEnforce(r.Context(), limit)
+	}
+	page, err := s.callStore.RecentPage(r.Context(), limit, cursor)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "database_error", err.Error())
 		return
 	}
 	out := map[string]any{
-		"items":     items,
+		"items":     page.Entries,
 		"persisted": true,
+	}
+	if page.HasMore {
+		out["next_cursor"] = formatCallLogCursor(page.Next)
 	}
 	if syncErr != nil {
 		out["syncError"] = syncErr.Error()
 	}
 	response.JSON(w, http.StatusOK, out)
+}
+
+// formatCallLogCursor encodes a keyset cursor as "<timestamp_ms>_<id>".
+func formatCallLogCursor(c callstore.Cursor) string {
+	return strconv.FormatInt(c.TimestampMS, 10) + "_" + strconv.FormatInt(c.ID, 10)
+}
+
+// parseCallLogCursor decodes a cursor produced by formatCallLogCursor. An empty
+// string means "first page"; ok is false only for malformed input.
+func parseCallLogCursor(raw string) (callstore.Cursor, bool) {
+	if raw == "" {
+		return callstore.Cursor{}, true
+	}
+	rawTS, rawID, found := strings.Cut(raw, "_")
+	if !found {
+		return callstore.Cursor{}, false
+	}
+	timestampMS, err := strconv.ParseInt(rawTS, 10, 64)
+	if err != nil {
+		return callstore.Cursor{}, false
+	}
+	id, err := strconv.ParseInt(rawID, 10, 64)
+	if err != nil || id <= 0 {
+		return callstore.Cursor{}, false
+	}
+	return callstore.Cursor{TimestampMS: timestampMS, ID: id}, true
 }
 
 func (s *Server) usage(w http.ResponseWriter, r *http.Request) {

@@ -154,6 +154,8 @@ export interface CallLogResponse {
   items: CallLogEntry[];
   persisted?: boolean;
   syncError?: string;
+  // Keyset cursor for the next (older) page; empty when nothing older is left.
+  nextCursor: string;
 }
 
 // A time-based price multiplier for one model. Weekdays is 0-6 (0=Sunday);

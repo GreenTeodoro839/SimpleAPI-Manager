@@ -38,6 +38,8 @@ export interface Provider {
   url: string;
   key?: string;
   headers?: Record<string, string>;
+  // Max in-flight upstream requests for this provider; 0 (or unset) = unlimited.
+  max_concurrency?: number;
   models?: ProviderModel[];
 }
 

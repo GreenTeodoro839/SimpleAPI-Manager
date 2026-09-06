@@ -22,6 +22,7 @@ const providerTemplate: Provider = {
   url: '',
   key: '',
   headers: {},
+  max_concurrency: 0,
   models: []
 };
 
@@ -32,6 +33,7 @@ function cloneProvider(provider: Provider = providerTemplate): Provider {
     url: provider.url,
     key: provider.key ?? '',
     headers: { ...(provider.headers ?? {}) },
+    max_concurrency: provider.max_concurrency ?? 0,
     models:
       provider.models?.map((model) => ({
         model: model.model,
@@ -63,7 +65,7 @@ function cleanProvider(provider: Provider): Provider {
     }))
     .filter((model) => model.model);
 
-  return {
+  const cleaned: Provider = {
     name: provider.name.trim(),
     type: provider.type,
     url: provider.url.trim(),
@@ -71,6 +73,11 @@ function cleanProvider(provider: Provider): Provider {
     headers,
     models
   };
+  // 0 is SimpleAPI's "unlimited", which is also what a missing field means --
+  // so leave it out entirely and keep config.yaml free of no-op keys.
+  const limit = Math.max(0, Math.trunc(provider.max_concurrency ?? 0));
+  if (limit > 0) cleaned.max_concurrency = limit;
+  return cleaned;
 }
 
 function providerModelID(providerName: string, model: ProviderModel) {
@@ -240,6 +247,7 @@ export function ProvidersPage() {
                   <strong>{provider.name}</strong>
                   <span>
                     {protocolLabel(provider.type)} · {count} models
+                    {provider.max_concurrency ? ` · 并发 ${provider.max_concurrency}` : ''}
                   </span>
                 </button>
               );
@@ -293,6 +301,21 @@ export function ProvidersPage() {
                 onChange={(event) => patchDraft({ key: event.target.value })}
                 placeholder="选填"
               />
+            </label>
+            <label>
+              最大并发
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={draft.max_concurrency ?? 0}
+                onChange={(event) =>
+                  patchDraft({ max_concurrency: Math.max(0, Math.trunc(Number(event.target.value) || 0)) })
+                }
+              />
+              <span className="muted">
+                同时进行的上游请求数，0 = 不限制。超出时先改走下一个候选 provider，全都满载才返回 529 服务器忙。
+              </span>
             </label>
           </div>
 

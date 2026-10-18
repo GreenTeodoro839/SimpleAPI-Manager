@@ -21,15 +21,9 @@ export interface ManagementConfig {
   admin_key?: string;
 }
 
-export interface WebSearchForward {
-  enabled: boolean;
-  target_model?: string;
-}
-
 export interface ProviderModel {
   model: string;
   aliasA?: string;
-  anthropic_web_search_forward?: WebSearchForward;
 }
 
 export interface Provider {

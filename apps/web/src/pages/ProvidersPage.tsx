@@ -34,14 +34,10 @@ function cloneProvider(provider: Provider = providerTemplate): Provider {
     key: provider.key ?? '',
     headers: { ...(provider.headers ?? {}) },
     max_concurrency: provider.max_concurrency ?? 0,
-    models:
-      provider.models?.map((model) => ({
-        model: model.model,
-        aliasA: model.aliasA ?? '',
-        anthropic_web_search_forward: model.anthropic_web_search_forward
-          ? { ...model.anthropic_web_search_forward }
-          : undefined
-      })) ?? []
+    models: provider.models?.map((model) => ({
+      model: model.model,
+      aliasA: model.aliasA ?? ''
+    })) ?? []
   };
 }
 
@@ -55,13 +51,7 @@ function cleanProvider(provider: Provider): Provider {
     .map((model) => ({
       ...model,
       model: model.model.trim(),
-      aliasA: model.aliasA?.trim() ?? '',
-      anthropic_web_search_forward: model.anthropic_web_search_forward?.enabled
-        ? {
-            enabled: true,
-            target_model: model.anthropic_web_search_forward.target_model?.trim() ?? ''
-          }
-        : undefined
+      aliasA: model.aliasA?.trim() ?? ''
     }))
     .filter((model) => model.model);
 
@@ -78,12 +68,6 @@ function cleanProvider(provider: Provider): Provider {
   const limit = Math.max(0, Math.trunc(provider.max_concurrency ?? 0));
   if (limit > 0) cleaned.max_concurrency = limit;
   return cleaned;
-}
-
-function providerModelID(providerName: string, model: ProviderModel) {
-  const aliasA = (model.aliasA || model.model).trim();
-  const name = providerName.trim();
-  return name && aliasA ? `${name}/${aliasA}` : '';
 }
 
 export function ProvidersPage() {
@@ -363,83 +347,30 @@ export function ProvidersPage() {
               </button>
             </div>
             <div className="repeat-list">
-              {(draft.models ?? []).map((model, index) => {
-                const currentInternalID = providerModelID(draft.name, model);
-                const targetValue = model.anthropic_web_search_forward?.target_model ?? '';
-                const targetChoices = models.filter((item) => item.id !== currentInternalID);
-                const targetMissing =
-                  targetValue && !targetChoices.some((item) => item.id === targetValue);
-
-                return (
-                  <div className="nested-panel" key={`provider-model-${index}`}>
-                    <div className="repeat-row two-plus-action">
-                      <label>
-                        实际模型
-                        <input
-                          value={model.model}
-                          onChange={(event) => updateModel(index, { model: event.target.value })}
-                        />
-                      </label>
-                      <label>
-                        aliasA
-                        <input
-                          value={model.aliasA ?? ''}
-                          onChange={(event) => updateModel(index, { aliasA: event.target.value })}
-                          placeholder="留空使用实际模型名"
-                        />
-                      </label>
-                      <button className="icon-button" type="button" onClick={() => removeModel(index)}>
-                        <X size={16} />
-                      </button>
-                    </div>
-                    {draft.type === 'anthropic' && (
-                      <div className="form-grid">
-                        <label className="checkbox-row">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(model.anthropic_web_search_forward?.enabled)}
-                            onChange={(event) =>
-                              updateModel(index, {
-                                anthropic_web_search_forward: event.target.checked
-                                  ? {
-                                      enabled: true,
-                                      target_model:
-                                        model.anthropic_web_search_forward?.target_model ?? ''
-                                    }
-                                  : undefined
-                              })
-                            }
-                          />
-                          启用 anthropic web_search 转发
-                        </label>
-                        <label>
-                          转发目标内部模型
-                          <select
-                            disabled={!model.anthropic_web_search_forward?.enabled}
-                            value={targetValue}
-                            onChange={(event) =>
-                              updateModel(index, {
-                                anthropic_web_search_forward: {
-                                  enabled: true,
-                                  target_model: event.target.value
-                                }
-                              })
-                            }
-                          >
-                            <option value="">选择目标模型</option>
-                            {targetMissing && <option value={targetValue}>{targetValue}</option>}
-                            {targetChoices.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.id} · {item.upstream_model}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                    )}
+              {(draft.models ?? []).map((model, index) => (
+                <div className="nested-panel" key={`provider-model-${index}`}>
+                  <div className="repeat-row two-plus-action">
+                    <label>
+                      实际模型
+                      <input
+                        value={model.model}
+                        onChange={(event) => updateModel(index, { model: event.target.value })}
+                      />
+                    </label>
+                    <label>
+                      aliasA
+                      <input
+                        value={model.aliasA ?? ''}
+                        onChange={(event) => updateModel(index, { aliasA: event.target.value })}
+                        placeholder="留空使用实际模型名"
+                      />
+                    </label>
+                    <button className="icon-button" type="button" onClick={() => removeModel(index)}>
+                      <X size={16} />
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </div>

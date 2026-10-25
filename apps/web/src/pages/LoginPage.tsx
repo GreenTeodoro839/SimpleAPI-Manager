@@ -1,10 +1,17 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, LockKeyhole, Monitor, Moon, Sun } from 'lucide-react';
+import { Activity, Contrast, LockKeyhole, Monitor, Moon, Sun } from 'lucide-react';
 import { errorMessage, getInfo, getManagerConfig } from '@/api/managerApi';
 import { useSessionStore } from '@/store/session';
-import { useThemeStore } from '@/store/theme';
+import { useThemeStore, type ThemePreference } from '@/store/theme';
 import { Notice } from '@/components/Notice';
+
+const THEME_META: Record<ThemePreference, { label: string; next: string; Icon: typeof Sun }> = {
+  auto: { label: '自动', next: '浅色', Icon: Monitor },
+  light: { label: '浅色', next: '纯白', Icon: Sun },
+  white: { label: '纯白', next: '深色', Icon: Contrast },
+  dark: { label: '深色', next: '自动', Icon: Moon }
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -39,10 +46,7 @@ export function LoginPage() {
       setLoading(false);
     }
   };
-  const themeLabel =
-    themePreference === 'auto' ? '自动' : themePreference === 'dark' ? '深色' : '浅色';
-  const nextThemeLabel =
-    themePreference === 'auto' ? '浅色' : themePreference === 'light' ? '深色' : '自动';
+  const themeMeta = THEME_META[themePreference];
 
   return (
     <div className="login-screen">
@@ -51,16 +55,10 @@ export function LoginPage() {
           className="icon-button login-theme-button"
           type="button"
           onClick={cycleTheme}
-          aria-label={`当前主题：${themeLabel}，点击切换到${nextThemeLabel}`}
-          title={`当前主题：${themeLabel}，点击切换到${nextThemeLabel}`}
+          aria-label={`当前主题：${themeMeta.label}，点击切换到${themeMeta.next}`}
+          title={`当前主题：${themeMeta.label}，点击切换到${themeMeta.next}`}
         >
-          {themePreference === 'auto' ? (
-            <Monitor size={16} />
-          ) : themePreference === 'dark' ? (
-            <Moon size={16} />
-          ) : (
-            <Sun size={16} />
-          )}
+          <themeMeta.Icon size={16} />
         </button>
         <div className="brand large">
           <div className="brand-mark">

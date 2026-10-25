@@ -4,7 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf9f5" />
     <title>SimpleAPI Manager</title>
+    <style>
+      /* 主题脚本执行前先铺上底色，避免深色系统下白闪 */
+      html {
+        background: #faf9f5;
+      }
+      html[data-theme='white'] {
+        background: #ffffff;
+      }
+      html[data-theme='dark'] {
+        background: #151412;
+      }
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme='light']):not([data-theme='white']):not([data-theme='dark']) {
+          background: #151412;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

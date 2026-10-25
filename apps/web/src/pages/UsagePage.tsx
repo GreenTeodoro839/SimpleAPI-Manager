@@ -4,6 +4,8 @@ import { getUsage } from '@/api/managerApi';
 import { usePanelSession } from '@/store/session';
 import { EmptyState } from '@/components/EmptyState';
 import { EChartsView } from '@/components/EChartsView';
+import { useThemeStore } from '@/store/theme';
+import { chartTheme } from '@/utils/chartTheme';
 import { integer, protocolLabel, tokenNumber } from '@/utils/format';
 import type { UsageItem } from '@/types';
 
@@ -81,6 +83,7 @@ function aggregateUsage(items: UsageItem[]) {
 
 export function UsagePage() {
   const session = usePanelSession();
+  const theme = useThemeStore((state) => state.effective);
   const [items, setItems] = useState<UsageItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -103,14 +106,30 @@ export function UsagePage() {
     const grouped = new Map<string, number>();
     usageRows.forEach((item) => grouped.set(item.internal_model, (grouped.get(item.internal_model) ?? 0) + item.requests));
     const rows = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const chart = chartTheme();
     return {
-      tooltip: { trigger: 'axis' },
+      color: chart.palette,
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: chart.tooltipBg,
+        borderColor: chart.tooltipBorder,
+        textStyle: { color: chart.textSecondary }
+      },
       grid: { left: 10, right: 16, top: 24, bottom: 24, containLabel: true },
-      xAxis: { type: 'value' },
-      yAxis: { type: 'category', data: rows.map(([name]) => name) },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: chart.textTertiary },
+        splitLine: { lineStyle: { color: chart.splitLine } }
+      },
+      yAxis: {
+        type: 'category',
+        data: rows.map(([name]) => name),
+        axisLabel: { color: chart.textSecondary },
+        axisLine: { lineStyle: { color: chart.axisLine } }
+      },
       series: [{ type: 'bar', data: rows.map(([, value]) => value), itemStyle: { borderRadius: 4 } }]
     };
-  }, [usageRows]);
+  }, [usageRows, theme]);
 
   return (
     <section className="page">
@@ -124,10 +143,12 @@ export function UsagePage() {
           刷新
         </button>
       </div>
-      <div className="panel">
-        <h2>模型请求排行</h2>
-        <EChartsView option={modelOption} height={320} />
-      </div>
+      {usageRows.length > 0 && (
+        <div className="panel">
+          <h2>模型请求排行</h2>
+          <EChartsView option={modelOption} height={320} />
+        </div>
+      )}
       <div className="panel">
         {usageRows.length === 0 ? (
           <EmptyState title="暂无用量数据" />

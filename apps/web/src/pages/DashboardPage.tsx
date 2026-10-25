@@ -6,6 +6,7 @@ import { StatCard } from '@/components/StatCard';
 import { Notice } from '@/components/Notice';
 import { EChartsView } from '@/components/EChartsView';
 import { useThemeStore } from '@/store/theme';
+import { chartTheme } from '@/utils/chartTheme';
 import { compactNumber, percent, protocolLabel, tokenNumber } from '@/utils/format';
 import type { ClientApiKey, InternalModel, Provider, UsageItem } from '@/types';
 
@@ -88,30 +89,28 @@ export function DashboardPage() {
   const protocolOption = useMemo(() => {
     const grouped = new Map<string, number>();
     usage.forEach((item) => grouped.set(item.source_protocol, (grouped.get(item.source_protocol) ?? 0) + item.requests));
-    const textColor = theme === 'dark' ? '#a8b0c0' : '#5f6c7b';
-    const mutedColor = theme === 'dark' ? '#737b8c' : '#8a96a6';
-    const tooltipBackground = theme === 'dark' ? '#121620' : '#ffffff';
-    const tooltipBorder = theme === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.14)';
+    const chart = chartTheme();
     return {
+      color: chart.palette,
       tooltip: {
         trigger: 'item',
-        backgroundColor: tooltipBackground,
-        borderColor: tooltipBorder,
-        textStyle: { color: textColor }
+        backgroundColor: chart.tooltipBg,
+        borderColor: chart.tooltipBorder,
+        textStyle: { color: chart.textSecondary }
       },
-      textStyle: { color: textColor, textBorderWidth: 0 },
+      textStyle: { color: chart.textSecondary, textBorderWidth: 0 },
       series: [
         {
           type: 'pie',
           radius: ['45%', '72%'],
           label: {
-            color: textColor,
+            color: chart.textSecondary,
             fontWeight: 700,
             textBorderWidth: 0,
             textShadowBlur: 0
           },
           labelLine: {
-            lineStyle: { color: mutedColor }
+            lineStyle: { color: chart.textTertiary }
           },
           data: Array.from(grouped.entries()).map(([name, value]) => ({ name: protocolLabel(name), value }))
         }
@@ -123,14 +122,30 @@ export function DashboardPage() {
     const grouped = new Map<string, number>();
     usage.forEach((item) => grouped.set(item.provider, (grouped.get(item.provider) ?? 0) + item.requests));
     const rows = Array.from(grouped.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const chart = chartTheme();
     return {
-      tooltip: { trigger: 'axis' },
+      color: chart.palette,
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: chart.tooltipBg,
+        borderColor: chart.tooltipBorder,
+        textStyle: { color: chart.textSecondary }
+      },
       grid: { left: 10, right: 16, top: 24, bottom: 24, containLabel: true },
-      xAxis: { type: 'value' },
-      yAxis: { type: 'category', data: rows.map(([name]) => name) },
+      xAxis: {
+        type: 'value',
+        axisLabel: { color: chart.textTertiary },
+        splitLine: { lineStyle: { color: chart.splitLine } }
+      },
+      yAxis: {
+        type: 'category',
+        data: rows.map(([name]) => name),
+        axisLabel: { color: chart.textSecondary },
+        axisLine: { lineStyle: { color: chart.axisLine } }
+      },
       series: [{ type: 'bar', data: rows.map(([, value]) => value), itemStyle: { borderRadius: 4 } }]
     };
-  }, [usage]);
+  }, [theme, usage]);
 
   return (
     <section className="page">
@@ -153,16 +168,18 @@ export function DashboardPage() {
         <StatCard label="成功率" value={percent(totals.successRate)} icon={<AlertTriangle />} tone={totals.failures ? 'red' : 'green'} />
         <StatCard label="Tokens" value={tokenNumber(totals.total)} icon={<Database />} sublabel={`in ${tokenNumber(totals.input)} / out ${tokenNumber(totals.output)} / cache ${tokenNumber(totals.cache)}`} />
       </div>
-      <div className="grid two">
-        <div className="panel">
-          <h2>协议流量</h2>
-          <EChartsView option={protocolOption} />
+      {usage.length > 0 && (
+        <div className="grid two">
+          <div className="panel">
+            <h2>协议流量</h2>
+            <EChartsView option={protocolOption} />
+          </div>
+          <div className="panel">
+            <h2>Provider 请求排行</h2>
+            <EChartsView option={providerOption} />
+          </div>
         </div>
-        <div className="panel">
-          <h2>Provider 请求排行</h2>
-          <EChartsView option={providerOption} />
-        </div>
-      </div>
+      )}
     </section>
   );
 }

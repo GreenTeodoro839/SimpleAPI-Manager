@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'white' | 'dark';
 export type ThemePreference = 'auto' | ThemeMode;
 
 const STORAGE_KEY = 'simpleapi-manager.theme.preference';
-const THEME_ORDER: ThemePreference[] = ['auto', 'light', 'dark'];
+const THEME_ORDER: ThemePreference[] = ['auto', 'light', 'white', 'dark'];
 
 function systemTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'light';
@@ -19,7 +19,9 @@ function readThemePreference(): ThemePreference {
   if (typeof window === 'undefined') return 'auto';
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'auto' || stored === 'light' || stored === 'dark' ? stored : 'auto';
+    return stored === 'auto' || stored === 'light' || stored === 'white' || stored === 'dark'
+      ? stored
+      : 'auto';
   } catch {
     return 'auto';
   }
@@ -38,7 +40,7 @@ export function applyTheme(mode: ThemeMode, preference: ThemePreference = mode) 
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = mode;
   document.documentElement.dataset.themePreference = preference;
-  document.documentElement.style.colorScheme = mode;
+  document.documentElement.style.colorScheme = mode === 'white' ? 'light' : mode;
 }
 
 export function initializeTheme() {

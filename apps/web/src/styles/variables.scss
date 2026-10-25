@@ -1,95 +1,200 @@
-$transition-fast: 140ms ease;
-$transition-normal: 220ms ease;
+// SimpleAPI Manager 设计令牌 —— 极简暖灰体系（参考 Cli-Proxy-API-Management-Center）
+// 浅色 = 纸感暖灰 / 纯白 = 纯白 / 深色 = 暖炭色，主色为暖灰，成功色只给「活的流量」。
 
-@mixin dark-theme {
-  color-scheme: dark;
-  --app-bg: #080b12;
-  --app-bg-panel: #0d111c;
-  --surface: rgba(18, 22, 32, 0.84);
-  --surface-strong: #1b2130;
-  --surface-soft: rgba(24, 29, 42, 0.72);
-  --surface-blue: rgba(19, 24, 37, 0.72);
-  --sidebar-bg: rgba(18, 22, 32, 0.78);
-  --topbar-bg: rgba(14, 17, 26, 0.94);
-  --content-glow: rgba(76, 99, 165, 0.16);
-  --login-glow: rgba(76, 99, 165, 0.22);
-  --text-primary: #e5e7eb;
-  --text-secondary: #a8b0c0;
-  --text-muted: #737b8c;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --primary: #5b8cff;
-  --primary-hover: #77a0ff;
-  --primary-soft: rgba(75, 118, 255, 0.14);
-  --primary-tint: rgba(75, 118, 255, 0.1);
-  --green: #22c55e;
-  --green-soft: rgba(34, 197, 94, 0.13);
-  --amber: #f59e0b;
-  --amber-soft: rgba(245, 158, 11, 0.14);
-  --red: #f43f5e;
-  --red-soft: rgba(244, 63, 94, 0.14);
-  --violet: #8b5cf6;
-  --violet-soft: rgba(139, 92, 246, 0.13);
-  --cyan: #22d3ee;
-  --cyan-soft: rgba(34, 211, 238, 0.12);
-  --editor-bg: #0f1420;
-  --editor-gutter-bg: #111827;
-  --editor-active-line: rgba(91, 140, 255, 0.1);
-  --editor-selection: rgba(91, 140, 255, 0.28);
-  --shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.26);
-}
+$transition-fast: 160ms cubic-bezier(0.23, 1, 0.32, 1);
+$transition-normal: 300ms cubic-bezier(0.23, 1, 0.32, 1);
 
-:root,
-:root[data-theme="light"] {
+$font-family:
+  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+  'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+$font-mono:
+  ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas,
+  'Liberation Mono', monospace;
+
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 14px;
+$radius-full: 9999px;
+
+// ---------- 浅色（默认）：纸感暖灰 ----------
+@mixin theme-paper {
   color-scheme: light;
-  --app-bg: #eff2f7;
-  --app-bg-panel: #f7faff;
-  --surface: rgba(255, 255, 255, 0.86);
-  --surface-strong: #ffffff;
-  --surface-soft: rgba(255, 255, 255, 0.62);
-  --surface-blue: rgba(230, 243, 255, 0.58);
-  --sidebar-bg: rgba(255, 255, 255, 0.58);
-  --topbar-bg: rgba(255, 255, 255, 0.72);
-  --content-glow: rgba(101, 170, 255, 0.22);
-  --login-glow: rgba(101, 170, 255, 0.2);
-  --text-primary: #2c3e50;
-  --text-secondary: #5f6c7b;
-  --text-muted: #8a96a6;
-  --border: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-soft: rgba(59, 130, 246, 0.12);
-  --primary-tint: rgba(59, 130, 246, 0.08);
-  --green: #22c55e;
-  --green-soft: rgba(34, 197, 94, 0.12);
-  --amber: #f59e0b;
-  --amber-soft: rgba(245, 158, 11, 0.13);
-  --red: #ef4444;
-  --red-soft: rgba(239, 68, 68, 0.12);
-  --violet: #8b5cf6;
-  --violet-soft: rgba(139, 92, 246, 0.11);
-  --cyan: #06b6d4;
-  --cyan-soft: rgba(6, 182, 212, 0.1);
+  --bg-page: #faf9f5;
+  --bg-panel: #f0eee8;
+  --bg-soft: #e9e6df;
+  --bg-hover: #e9e6df;
+  --floating-surface: #fffdf9;
+  --floating-shadow: 0 12px 26px rgba(0, 0, 0, 0.14);
+
+  --text-primary: #2d2a26;
+  --text-secondary: #6d6760;
+  --text-tertiary: #a29c95;
+
+  --border: #e3e1db;
+  --border-strong: #d5d2cb;
+  --border-hover: #cecac4;
+
+  --primary: #8b8680;
+  --primary-hover: #7f7a74;
+  --primary-active: #726d67;
+  --primary-contrast: #ffffff;
+  --primary-soft: rgba(139, 134, 128, 0.12);
+  --primary-ring: rgba(139, 134, 128, 0.26);
+
+  --success: #0f9d6e;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --warning: #b45309;
+  --warning-soft: rgba(217, 119, 6, 0.12);
+  --danger: #c65746;
+  --danger-soft: rgba(198, 87, 70, 0.12);
+  --violet: #8a7ba8;
+  --violet-soft: rgba(138, 123, 168, 0.14);
+
+  --chart-1: #10b981;
+  --chart-2: #8b8680;
+  --chart-3: #d97706;
+  --chart-4: #c65746;
+  --chart-5: #4f9d8d;
+  --chart-6: #8a7ba8;
+
   --editor-bg: #ffffff;
-  --editor-gutter-bg: #f8fafc;
-  --editor-active-line: rgba(59, 130, 246, 0.08);
-  --editor-selection: rgba(59, 130, 246, 0.2);
-  --shadow: 0 10px 26px rgba(31, 38, 135, 0.08);
-  --shadow-soft: 0 18px 40px rgba(31, 38, 135, 0.1);
-  --radius: 8px;
-  --sidebar-width: 148px;
-  --topbar-height: 50px;
-  --content-gap: 14px;
+  --editor-gutter: #f6f4ee;
+  --editor-active-line: rgba(139, 134, 128, 0.08);
+  --editor-selection: rgba(139, 134, 128, 0.22);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 18px -3px rgba(0, 0, 0, 0.1);
+
+  --glass-panel: color-mix(in srgb, var(--bg-panel) 80%, transparent);
 }
 
-:root[data-theme="dark"] {
-  @include dark-theme;
+// ---------- 纯白 ----------
+@mixin theme-white {
+  color-scheme: light;
+  --bg-page: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-soft: #f6f6f6;
+  --bg-hover: #f6f6f6;
+  --floating-surface: #ffffff;
+  --floating-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+
+  --text-primary: #2d2a26;
+  --text-secondary: #6d6760;
+  --text-tertiary: #a29c95;
+
+  --border: #e5e5e5;
+  --border-strong: #d9d9d9;
+  --border-hover: #cccccc;
+
+  --primary: #8b8680;
+  --primary-hover: #7f7a74;
+  --primary-active: #726d67;
+  --primary-contrast: #ffffff;
+  --primary-soft: rgba(139, 134, 128, 0.12);
+  --primary-ring: rgba(139, 134, 128, 0.26);
+
+  --success: #0f9d6e;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --warning: #b45309;
+  --warning-soft: rgba(217, 119, 6, 0.12);
+  --danger: #c65746;
+  --danger-soft: rgba(198, 87, 70, 0.12);
+  --violet: #8a7ba8;
+  --violet-soft: rgba(138, 123, 168, 0.14);
+
+  --chart-1: #10b981;
+  --chart-2: #8b8680;
+  --chart-3: #d97706;
+  --chart-4: #c65746;
+  --chart-5: #4f9d8d;
+  --chart-6: #8a7ba8;
+
+  --editor-bg: #ffffff;
+  --editor-gutter: #f8f8f8;
+  --editor-active-line: rgba(139, 134, 128, 0.08);
+  --editor-selection: rgba(139, 134, 128, 0.22);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 18px -3px rgba(0, 0, 0, 0.1);
+
+  --glass-panel: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+}
+
+// ---------- 深色：暖炭 ----------
+@mixin theme-dark {
+  color-scheme: dark;
+  --bg-page: #151412;
+  --bg-panel: #1d1b18;
+  --bg-soft: #262320;
+  --bg-hover: #2e2a26;
+  --floating-surface: #2a2723;
+  --floating-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+
+  --text-primary: #f6f4f1;
+  --text-secondary: #c9c3bb;
+  --text-tertiary: #9c958d;
+
+  --border: #3a3530;
+  --border-strong: #4a453f;
+  --border-hover: #5a544d;
+
+  --primary: #8b8680;
+  --primary-hover: #9a948e;
+  --primary-active: #a6a099;
+  --primary-contrast: #ffffff;
+  --primary-soft: rgba(154, 148, 142, 0.16);
+  --primary-ring: rgba(154, 148, 142, 0.3);
+
+  --success: #0fae78;
+  --success-soft: rgba(16, 185, 129, 0.16);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.16);
+  --danger: #e08372;
+  --danger-soft: rgba(198, 87, 70, 0.2);
+  --violet: #a496cc;
+  --violet-soft: rgba(164, 150, 204, 0.16);
+
+  --chart-1: #0fae78;
+  --chart-2: #9a948e;
+  --chart-3: #f59e0b;
+  --chart-4: #cf4b3a;
+  --chart-5: #57b3a2;
+  --chart-6: #a496cc;
+
+  --editor-bg: #171512;
+  --editor-gutter: #1d1b18;
+  --editor-active-line: rgba(154, 148, 142, 0.09);
+  --editor-selection: rgba(154, 148, 142, 0.26);
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+
+  --glass-panel: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+}
+
+:root {
+  @include theme-paper;
+
+  --header-height: 80px;
+  --shell-gutter: 24px;
+  --sidebar-width: 232px;
+  --sidebar-collapsed-width: 60px;
+  --sidebar-active-width: var(--sidebar-width);
+  --floating-control-size: 40px;
+  --content-gap: 24px;
+  --glass-blur: 16px;
+}
+
+:root[data-theme='white'] {
+  @include theme-white;
+}
+
+:root[data-theme='dark'] {
+  @include theme-dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    @include dark-theme;
+  :root:not([data-theme='light']):not([data-theme='white']):not([data-theme='dark']) {
+    @include theme-dark;
   }
 }

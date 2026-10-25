@@ -11,13 +11,14 @@ interface CodeEditorProps {
 
 export function CodeEditor({ value, onChange, minHeight = '420px', readOnly }: CodeEditorProps) {
   const themeMode = useThemeStore((state) => state.effective);
+  const mirrorTheme = themeMode === 'dark' ? 'dark' : 'light';
 
   return (
     <div className="code-editor" style={{ minHeight }}>
       <CodeMirror
         value={value}
         minHeight={minHeight}
-        theme={themeMode}
+        theme={mirrorTheme}
         basicSetup={{
           foldGutter: true,
           lineNumbers: true,

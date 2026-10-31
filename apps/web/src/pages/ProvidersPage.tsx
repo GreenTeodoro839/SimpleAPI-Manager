@@ -16,6 +16,18 @@ import type { InternalModel, Protocol, Provider, ProviderModel } from '@/types';
 
 const protocols: Protocol[] = ['anthropic', 'openai_completion', 'codex'];
 
+const protocolUrlPlaceholders: Record<Protocol, string> = {
+  anthropic: 'https://relay.example.com/anthropic',
+  openai_completion: 'https://relay.example.com/openai/v1',
+  codex: 'https://relay.example.com/codex/v1'
+};
+
+const protocolUrlHints: Record<Protocol, string> = {
+  anthropic: '不含 /v1 的 base，自动追加 /v1/messages。',
+  openai_completion: '含 /v1 的 base，自动追加 /chat/completions。',
+  codex: '含 /v1 的 base，自动追加 /responses。'
+};
+
 const providerTemplate: Provider = {
   name: '',
   type: 'anthropic',
@@ -26,11 +38,26 @@ const providerTemplate: Provider = {
   models: []
 };
 
+// Normalize urls into a full three-key record so the form inputs are always
+// controlled; empty string means "not configured", same as SimpleAPI.
+function protocolUrls(provider: Provider): Record<Protocol, string> {
+  return {
+    anthropic: provider.urls?.anthropic ?? '',
+    openai_completion: provider.urls?.openai_completion ?? '',
+    codex: provider.urls?.codex ?? ''
+  };
+}
+
+function hasProtocolUrls(provider: Provider): boolean {
+  return Object.values(provider.urls ?? {}).some((value) => (value ?? '').trim() !== '');
+}
+
 function cloneProvider(provider: Provider = providerTemplate): Provider {
   return {
     name: provider.name,
     type: provider.type,
     url: provider.url,
+    urls: protocolUrls(provider),
     key: provider.key ?? '',
     headers: { ...(provider.headers ?? {}) },
     max_concurrency: provider.max_concurrency ?? 0,
@@ -67,6 +94,12 @@ function cleanProvider(provider: Provider): Provider {
   // so leave it out entirely and keep config.yaml free of no-op keys.
   const limit = Math.max(0, Math.trunc(provider.max_concurrency ?? 0));
   if (limit > 0) cleaned.max_concurrency = limit;
+  const urls = Object.fromEntries(
+    Object.entries(provider.urls ?? {})
+      .map(([protocol, value]) => [protocol, (value ?? '').trim()])
+      .filter(([, value]) => value)
+  ) as Partial<Record<Protocol, string>>;
+  if (Object.keys(urls).length > 0) cleaned.urls = urls;
   return cleaned;
 }
 
@@ -116,6 +149,10 @@ export function ProvidersPage() {
     setDraft((current) => ({ ...current, ...patch }));
   };
 
+  const updateProtocolUrl = (protocol: Protocol, value: string) => {
+    patchDraft({ urls: { ...(draft.urls ?? {}), [protocol]: value } });
+  };
+
   const updateHeader = (index: number, field: 'key' | 'value', value: string) => {
     const rows = Object.entries(draft.headers ?? {});
     rows[index] = field === 'key' ? [value, rows[index]?.[1] ?? ''] : [rows[index]?.[0] ?? '', value];
@@ -153,8 +190,15 @@ export function ProvidersPage() {
     setSuccess('');
     try {
       const parsed = cleanProvider(draft);
-      if (!parsed.name || !parsed.url) {
-        setMessage('Provider name 和 url 都必须填写。');
+      if (!parsed.name) {
+        setMessage('Provider name 必须填写。');
+        return;
+      }
+      // SimpleAPI requires a default upstream: url or urls[type] (the latter wins).
+      if (!parsed.url && !parsed.urls?.[parsed.type]) {
+        setMessage(
+          `默认上游缺少地址：请填写 Base URL，或填写「${protocolLabel(parsed.type)}」协议的独立地址。`
+        );
         return;
       }
       if (parsed.name.includes('/')) {
@@ -232,6 +276,7 @@ export function ProvidersPage() {
                   <span>
                     {protocolLabel(provider.type)} · {count} models
                     {provider.max_concurrency ? ` · 并发 ${provider.max_concurrency}` : ''}
+                    {hasProtocolUrls(provider) ? ' · 多协议' : ''}
                   </span>
                 </button>
               );
@@ -272,10 +317,14 @@ export function ProvidersPage() {
                   </option>
                 ))}
               </select>
+              <span className="muted">转译目标：请求协议没有独立地址时，转译到该协议的默认上游。</span>
             </label>
             <label>
-              Base URL
+              默认 Base URL
               <input value={draft.url} onChange={(event) => patchDraft({ url: event.target.value })} />
+              <span className="muted">
+                转译用默认上游，与「各协议独立地址」中所选协议的地址至少填一个，独立地址优先。
+              </span>
             </label>
             <label>
               API Key
@@ -301,6 +350,30 @@ export function ProvidersPage() {
                 同时进行的上游请求数，0 = 不限制。超出时先改走下一个候选 provider，全都满载才返回 529 服务器忙。
               </span>
             </label>
+          </div>
+
+          <div className="subsection">
+            <div className="subsection-header">
+              <h3>各协议独立地址</h3>
+            </div>
+            <p className="muted">
+              选填。同协议请求优先直传对应地址，保留协议原生字段；留空的协议转译到默认上游。
+              各地址共用 key、headers、模型表和并发额度，直传失败不会改走转译。
+            </p>
+            <div className="repeat-list">
+              {protocols.map((protocol) => (
+                <label key={`provider-url-${protocol}`}>
+                  {protocolLabel(protocol)}
+                  <input
+                    autoComplete="off"
+                    placeholder={protocolUrlPlaceholders[protocol]}
+                    value={draft.urls?.[protocol] ?? ''}
+                    onChange={(event) => updateProtocolUrl(protocol, event.target.value)}
+                  />
+                  <span className="muted">{protocolUrlHints[protocol]}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="subsection">

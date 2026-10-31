@@ -30,6 +30,10 @@ export interface Provider {
   name: string;
   type: Protocol;
   url: string;
+  // Optional per-protocol upstream base URLs. A non-empty same-protocol URL is
+  // used for native passthrough; urls[type] overrides url as the default
+  // translation target. Empty string counts as unconfigured.
+  urls?: Partial<Record<Protocol, string>>;
   key?: string;
   headers?: Record<string, string>;
   // Max in-flight upstream requests for this provider; 0 (or unset) = unlimited.
